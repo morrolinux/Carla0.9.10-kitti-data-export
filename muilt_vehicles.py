@@ -10,6 +10,7 @@ try:
 except IndexError:
     pass
 
+import argparse
 import carla
 import logging
 import math
@@ -21,6 +22,13 @@ from bounding_box import create_kitti_datapoint
 from constants import *
 import image_converter
 from dataexport import *
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--overwrite", action="store_true", default=False, help="ow dataset. append otherwise")
+parser.add_argument("--camera-fov", default="90", type=str, help="Camera FOV")
+parser.add_argument("--ds-interval", default=100, type=int, help="Interval between frames to be exported")
+args = parser.parse_args()
+
 
 """ OUTPUT FOLDER GENERATION """
 PHASE = "training"
@@ -83,19 +91,12 @@ class SynchronyModel(object):
         num_existing_data_files = len(
             [name for name in os.listdir(label_path) if name.endswith('.txt')])
         print(num_existing_data_files)
-        if num_existing_data_files == 0:
+        if num_existing_data_files == 0 or args.overwrite:
             return 0
-        answer = input(
-            "There already exists a dataset in {}. Would you like to (O)verwrite or (A)ppend the dataset? (O/A)".format(
-                OUTPUT_FOLDER))
-        if answer.upper() == "O":
-            logging.info(
-                "Resetting frame number to 0 and overwriting existing")
-            # Overwrite the data
-            return 0
-        logging.info("Continuing recording data on frame number {}".format(
-            num_existing_data_files))
-        return num_existing_data_files
+        else:
+            logging.info("Continuing recording data on frame number {}".format(
+                num_existing_data_files))
+            return num_existing_data_files
 
     def tick(self, timeout):
         # Drive the simulator to the next frame and get the data of the current frame
@@ -132,7 +133,7 @@ class SynchronyModel(object):
     def _span_player(self):
         """create our target vehicle"""
         my_vehicle_bp = random.choice(self.blueprint_library.filter("vehicle.lincoln.mkz2017"))
-        location = carla.Location(190, 10, 0.5)
+        location = carla.Location(50, 5, 0.5)
         rotation = carla.Rotation(0, 0, 0)
         transform_vehicle = carla.Transform(location, rotation)
         my_vehicle = self.world.spawn_actor(my_vehicle_bp, transform_vehicle)
@@ -149,11 +150,11 @@ class SynchronyModel(object):
 
         camera_bp.set_attribute('image_size_x', str(WINDOW_WIDTH))
         camera_bp.set_attribute('image_size_y', str(WINDOW_HEIGHT))
-        camera_bp.set_attribute('fov', '90')
+        camera_bp.set_attribute('fov', args.camera_fov) # 45 60 90 120 150 180
 
         camera_d_bp.set_attribute('image_size_x', str(WINDOW_WIDTH))
         camera_d_bp.set_attribute('image_size_y', str(WINDOW_HEIGHT))
-        camera_d_bp.set_attribute('fov', '90')
+        camera_d_bp.set_attribute('fov', args.camera_fov) # 45 60 90 120 150 180
 
         lidar_bp.set_attribute('range', '50')
         lidar_bp.set_attribute('rotation_frequency', '20')
@@ -179,14 +180,14 @@ class SynchronyModel(object):
         k = np.identity(3)
         k[0, 2] = WINDOW_WIDTH_HALF
         k[1, 2] = WINDOW_HEIGHT_HALF
-        f = WINDOW_WIDTH / (2.0 * math.tan(90.0 * math.pi / 360.0))
+        f = WINDOW_WIDTH / (2.0 * math.tan(float(args.camera_fov) * math.pi / 360.0))
         k[0, 0] = k[1, 1] = f
         return k, my_camera
 
     def _span_non_player(self):
         """create autonomous vehicles and people"""
         blueprints = self.world.get_blueprint_library().filter(FILTERV)
-        blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 4]
+        # blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 4]
         blueprints = [x for x in blueprints if not x.id.endswith('isetta')]
         blueprints = [x for x in blueprints if not x.id.endswith('carlacola')]
         blueprints = [x for x in blueprints if not x.id.endswith('cybertruck')]
@@ -406,7 +407,7 @@ def main():
                 sync_mode.extrinsic = np.mat(sync_mode.my_camera.get_transform().get_matrix())
                 image, datapoints = sync_mode.generate_datapoints(image)
 
-                if datapoints and step % 100 is 0:
+                if datapoints and step % args.ds_interval is 0:
                     data = np.copy(np.frombuffer(sync_mode.point_cloud.raw_data, dtype=np.dtype('f4')))
                     data = np.reshape(data, (int(data.shape[0] / 4), 4))
                     # Isolate the 3D data
