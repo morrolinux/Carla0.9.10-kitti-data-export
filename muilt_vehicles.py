@@ -18,6 +18,7 @@ import pygame
 import random
 import queue
 import threading
+import concurrent.futures
 import numpy as np
 from bounding_box import create_kitti_datapoint
 from constants import *
@@ -322,18 +323,17 @@ class SynchronyModel(object):
         logging.info("Attempting to save at frame no {}, frame no: {}".format(self.frame, self.captured_frame_no))
         groundplane_fname = GROUNDPLANE_PATH.format(self.captured_frame_no)
         lidar_fname = LIDAR_PATH.format(self.captured_frame_no)
+
         kitti_fname = LABEL_PATH.format(self.captured_frame_no)
         img_fname = IMAGE_PATH.format(self.captured_frame_no)
         calib_filename = CALIBRATION_PATH.format(self.captured_frame_no)
 
-        save_groundplanes(
-            groundplane_fname, self.player, LIDAR_HEIGHT_POS)
+        save_groundplanes(groundplane_fname, self.player, LIDAR_HEIGHT_POS)
         save_ref_files(OUTPUT_FOLDER, self.captured_frame_no)
+
         save_image_data(img_fname, self.main_image)
         save_kitti_data(kitti_fname, datapoints)
-
-        save_calibration_matrices(
-            calib_filename, self.intrinsic, self.extrinsic)
+        save_calibration_matrices(calib_filename, self.intrinsic, self.extrinsic)
 
         save_lidar_data(lidar_fname, point_cloud)
 
@@ -411,7 +411,12 @@ def main():
 
                 image = image_converter.to_rgb_array(sync_mode.main_image)
                 sync_mode.extrinsic = np.mat(sync_mode.my_camera.get_transform().get_matrix())
-                image, datapoints = sync_mode.generate_datapoints(image)
+
+                # TODO: implement simultaneous multi-camera export
+                images = [image]
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    futures = [executor.submit(sync_mode.generate_datapoints, img) for img in images]
+                image, datapoints = futures[-1].result()
 
                 if datapoints and step % args.ds_interval is 0:
                     data = np.copy(np.frombuffer(sync_mode.point_cloud.raw_data, dtype=np.dtype('f4')))
