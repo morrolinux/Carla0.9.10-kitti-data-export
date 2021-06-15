@@ -17,6 +17,7 @@ import math
 import pygame
 import random
 import queue
+import threading
 import numpy as np
 from bounding_box import create_kitti_datapoint
 from constants import *
@@ -422,7 +423,9 @@ def main():
                     # points = np.dot(sync_mode.player.get_transform().get_matrix(), points.T).T
                     # points = points[:, :-1]
                     # points[:, 2] -= LIDAR_HEIGHT_POS
-                    sync_mode._save_training_files(datapoints, points)
+
+                    # save training files asynchronously
+                    threading.Thread(target=sync_mode._save_training_files, args=(datapoints, points,)).start()
                     sync_mode.captured_frame_no += 1
 
                 step = step+1
