@@ -67,10 +67,11 @@ class SynchronyModel(object):
         self.sensors = []
         self._queues = []
         self.main_image = None
+        self.images = None
         self.depth_image = None
         self.point_cloud = None
-        self.extrinsic = None
-        self.intrinsic, self.my_camera = self._span_player()
+        self.extrinsics = None
+        self.intrinsics, self.cameras = self._span_player()
         self._span_non_player()
 
     def __enter__(self):
@@ -135,56 +136,92 @@ class SynchronyModel(object):
     def _span_player(self):
         """create our target vehicle"""
         my_vehicle_bp = random.choice(self.blueprint_library.filter("vehicle.lincoln.mkz2017"))
-        location = carla.Location(40, 10, 0.5)
+        location = carla.Location(50, 10, 0.5)
         rotation = carla.Rotation(0, 0, 0)
         transform_vehicle = carla.Transform(location, rotation)
         my_vehicle = self.world.spawn_actor(my_vehicle_bp, transform_vehicle)
-        k, my_camera = self._span_sensor(my_vehicle)
+        ks, cameras = self._span_sensor(my_vehicle)
         self.actor_list.append(my_vehicle)
         self.player = my_vehicle
-        return k, my_camera
+        return ks, cameras
 
     def _span_sensor(self, player):
         """create camera, depth camera and lidar and attach to the target vehicle"""
-        camera_bp = self.blueprint_library.find('sensor.camera.rgb')
+        transform_sensor = carla.Transform(carla.Location(x=0, y=0, z=CAMERA_HEIGHT_POS))
+        cameras = []
+
+        # Depth camera
         camera_d_bp = self.blueprint_library.find('sensor.camera.depth')
-        lidar_bp = self.blueprint_library.find('sensor.lidar.ray_cast')
-
-        camera_bp.set_attribute('image_size_x', str(WINDOW_WIDTH))
-        camera_bp.set_attribute('image_size_y', str(WINDOW_HEIGHT))
-        camera_bp.set_attribute('fov', args.camera_fov) # 45 60 90 120 150 180
-
         camera_d_bp.set_attribute('image_size_x', str(WINDOW_WIDTH))
         camera_d_bp.set_attribute('image_size_y', str(WINDOW_HEIGHT))
-        camera_d_bp.set_attribute('fov', args.camera_fov) # 45 60 90 120 150 180
+        camera_d_bp.set_attribute('fov', args.camera_fov)  # 45 60 90 120 150 180
+        my_camera_d = self.world.spawn_actor(camera_d_bp, transform_sensor, attach_to=player)
 
+        # Cameras
+        camera_bp = self.blueprint_library.find('sensor.camera.rgb')
+        camera_bp.set_attribute('image_size_x', str(WINDOW_WIDTH))
+        camera_bp.set_attribute('image_size_y', str(WINDOW_HEIGHT))
+
+        camera_bp.set_attribute('fov', "45")
+        cameras.append(self.world.spawn_actor(camera_bp, transform_sensor, attach_to=player))
+
+        camera_bp.set_attribute('fov', "60")
+        cameras.append(self.world.spawn_actor(camera_bp, transform_sensor, attach_to=player))
+
+        camera_bp.set_attribute('fov', "90")
+        cameras.append(self.world.spawn_actor(camera_bp, transform_sensor, attach_to=player))
+
+        camera_bp.set_attribute('fov', "120")
+        cameras.append(self.world.spawn_actor(camera_bp, transform_sensor, attach_to=player))
+
+        camera_bp.set_attribute('fov', "150")
+        cameras.append(self.world.spawn_actor(camera_bp, transform_sensor, attach_to=player))
+
+        # LiDAR
+        lidar_bp = self.blueprint_library.find('sensor.lidar.ray_cast')
         lidar_bp.set_attribute('range', '50')
         lidar_bp.set_attribute('rotation_frequency', '20')
         lidar_bp.set_attribute('upper_fov', '2')
         lidar_bp.set_attribute('lower_fov', '-26.8')
         lidar_bp.set_attribute('points_per_second', '320000')
         lidar_bp.set_attribute('channels', '32')
-
-        transform_sensor = carla.Transform(carla.Location(x=0, y=0, z=CAMERA_HEIGHT_POS))
-
-        my_camera = self.world.spawn_actor(camera_bp, transform_sensor, attach_to=player)
-        my_camera_d = self.world.spawn_actor(camera_d_bp, transform_sensor, attach_to=player)
         my_lidar = self.world.spawn_actor(lidar_bp, transform_sensor, attach_to=player)
 
-        self.actor_list.append(my_camera)
-        self.actor_list.append(my_camera_d)
         self.actor_list.append(my_lidar)
-        self.sensors.append(my_camera)
-        self.sensors.append(my_camera_d)
-        self.sensors.append(my_lidar)
+        self.actor_list.append(my_camera_d)
+        self.actor_list.extend(cameras)
 
-        # camera intrinsic  TODO: ARRAY DI CAMERA, INTRINSIC, EXTRINSIC, ...
+        self.sensors.append(my_lidar)
+        self.sensors.append(my_camera_d)
+        self.sensors.extend(cameras)
+
+        # camera intrinsic
+        intrinsics = []
         k = np.identity(3)
         k[0, 2] = WINDOW_WIDTH_HALF
         k[1, 2] = WINDOW_HEIGHT_HALF
-        f = WINDOW_WIDTH / (2.0 * math.tan(float(args.camera_fov) * math.pi / 360.0))
+
+        f = WINDOW_WIDTH / (2.0 * math.tan(float(45) * math.pi / 360.0))
         k[0, 0] = k[1, 1] = f
-        return k, my_camera
+        intrinsics.append(k.copy())
+
+        f = WINDOW_WIDTH / (2.0 * math.tan(float(60) * math.pi / 360.0))
+        k[0, 0] = k[1, 1] = f
+        intrinsics.append(k.copy())
+
+        f = WINDOW_WIDTH / (2.0 * math.tan(float(90) * math.pi / 360.0))
+        k[0, 0] = k[1, 1] = f
+        intrinsics.append(k.copy())
+
+        f = WINDOW_WIDTH / (2.0 * math.tan(float(120) * math.pi / 360.0))
+        k[0, 0] = k[1, 1] = f
+        intrinsics.append(k.copy())
+
+        f = WINDOW_WIDTH / (2.0 * math.tan(float(150) * math.pi / 360.0))
+        k[0, 0] = k[1, 1] = f
+        intrinsics.append(k.copy())
+
+        return intrinsics, cameras
 
     def _span_non_player(self):
         """create autonomous vehicles and people"""
@@ -318,26 +355,26 @@ class SynchronyModel(object):
 
         print('spawned %d walkers and %d vehicles, press Ctrl+C to exit.' % (len(walkers_id), len(vehicles_id)))
 
-    def _save_training_files(self, datapoints, point_cloud):
+    def _save_training_files(self, datapoints, point_cloud, cam_idx):
         """ Save data in Kitti dataset format """
         logging.info("Attempting to save at frame no {}, frame no: {}".format(self.frame, self.captured_frame_no))
         groundplane_fname = GROUNDPLANE_PATH.format(self.captured_frame_no)
         lidar_fname = LIDAR_PATH.format(self.captured_frame_no)
 
-        kitti_fname = LABEL_PATH.format(self.captured_frame_no)
-        img_fname = IMAGE_PATH.format(self.captured_frame_no)
-        calib_filename = CALIBRATION_PATH.format(self.captured_frame_no)
+        kitti_fname = LABEL_PATH.format(self.captured_frame_no) + "-" + str(cam_idx)
+        img_fname = IMAGE_PATH.format(self.captured_frame_no) + "-" + str(cam_idx)
+        calib_filename = CALIBRATION_PATH.format(self.captured_frame_no) + "-" + str(cam_idx)
 
         save_groundplanes(groundplane_fname, self.player, LIDAR_HEIGHT_POS)
         save_ref_files(OUTPUT_FOLDER, self.captured_frame_no)
 
-        save_image_data(img_fname, self.main_image)
+        save_image_data(img_fname, self.images[cam_idx])
         save_kitti_data(kitti_fname, datapoints)
-        save_calibration_matrices(calib_filename, self.intrinsic, self.extrinsic)
+        save_calibration_matrices(calib_filename, self.intrinsics[cam_idx], self.extrinsics[cam_idx])
 
         save_lidar_data(lidar_fname, point_cloud)
 
-    def generate_datapoints(self, image):
+    def generate_datapoints(self, image, idx):
         """ Returns a list of datapoints (labels and such) that are generated this frame together with the main image
         image """
         datapoints = []
@@ -354,7 +391,7 @@ class SynchronyModel(object):
         # Stores all datapoints for the current frame
         for agent in self.non_player:
             image, kitti_datapoint = create_kitti_datapoint(
-                agent, self.intrinsic, self.extrinsic, image, depth_map, self.player, rotRP)
+                agent, self.intrinsics[idx], self.extrinsics[idx], image, depth_map, self.player, rotRP)
             if kitti_datapoint:
                 datapoints.append(kitti_datapoint)
 
@@ -406,36 +443,47 @@ def main():
                 if should_quit():
                     break
                 clock.tick()
-                snapshot, sync_mode.main_image, sync_mode.depth_image, sync_mode.point_cloud = sync_mode.tick(
-                    timeout=2.0)
 
-                image = image_converter.to_rgb_array(sync_mode.main_image)
-                sync_mode.extrinsic = np.mat(sync_mode.my_camera.get_transform().get_matrix())
+                sensors = sync_mode.tick(timeout=2.0)
+                snapshot = sensors[0]
+                sync_mode.point_cloud = sensors[1]
+                sync_mode.depth_image = sensors[2]
+                sync_mode.images = sensors[3:]
 
-                # TODO: implement simultaneous multi-camera export
-                images = [image]
+                images = [image_converter.to_rgb_array(image) for image in sync_mode.images]
+                sync_mode.extrinsics = [np.mat(sync_mode.cameras[i].get_transform().get_matrix())
+                                        for i in range(len(sync_mode.cameras))]
+
                 with concurrent.futures.ThreadPoolExecutor() as executor:
-                    futures = [executor.submit(sync_mode.generate_datapoints, img) for img in images]
-                image, datapoints = futures[-1].result()
+                    futures = [executor.submit(sync_mode.generate_datapoints, img, i) for i, img in enumerate(images)]
 
-                if datapoints and step % args.ds_interval is 0:
-                    data = np.copy(np.frombuffer(sync_mode.point_cloud.raw_data, dtype=np.dtype('f4')))
-                    data = np.reshape(data, (int(data.shape[0] / 4), 4))
-                    # Isolate the 3D data
-                    points = data[:, :-1]
-                    # transform to car space
-                    # points = np.append(points, np.ones((points.shape[0], 1)), axis=1)
-                    # points = np.dot(sync_mode.player.get_transform().get_matrix(), points.T).T
-                    # points = points[:, :-1]
-                    # points[:, 2] -= LIDAR_HEIGHT_POS
+                for cam, f in enumerate(futures):
+                    image, datapoints = f.result()
 
-                    # save training files asynchronously
-                    threading.Thread(target=sync_mode._save_training_files, args=(datapoints, points,)).start()
-                    sync_mode.captured_frame_no += 1
+                    if cam == 2:
+                        draw_image(display, image)
 
+                    if datapoints and (step % args.ds_interval == 0):
+                        print("step", step, "saving image from cam", cam)
+                        data = np.copy(np.frombuffer(sync_mode.point_cloud.raw_data, dtype=np.dtype('f4')))
+                        data = np.reshape(data, (int(data.shape[0] / 4), 4))
+                        # Isolate the 3D data
+                        points = data[:, :-1]
+                        # transform to car space
+                        # points = np.append(points, np.ones((points.shape[0], 1)), axis=1)
+                        # points = np.dot(sync_mode.player.get_transform().get_matrix(), points.T).T
+                        # points = points[:, :-1]
+                        # points[:, 2] -= LIDAR_HEIGHT_POS
+
+                        # save training files asynchronously
+                        # TODO: maybe don't export LiDAR data for each camera since it's the same
+                        # TODO: FIX the possible race condition with file names: put a barrier before incrementing frame number
+                        threading.Thread(target=sync_mode._save_training_files, args=(datapoints, points, cam,)).start()
+
+                sync_mode.captured_frame_no += 1
                 step = step+1
                 fps = round(1.0 / snapshot.timestamp.delta_seconds)
-                draw_image(display, image)
+
                 display.blit(
                     font.render('% 5d FPS (real)' % clock.get_fps(), True, (255, 255, 255)),
                     (8, 10))
