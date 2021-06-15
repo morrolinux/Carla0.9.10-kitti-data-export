@@ -100,7 +100,7 @@ def depth_to_array(image):
     array = np.reshape(array, (image.height, image.width, 4))  # RGBA format
     array = array[:, :, :3]  # Take only RGB
     array = array[:, :, ::-1]  # BGR
-    array = array.astype(np.float32)  # 2ms
+    # array = array.astype(np.float32)  # 2ms  TODO: check wether it's really necessary or not.. looks like it's not
     gray_depth = ((array[:, :, 0] + array[:, :, 1] * 256.0 + array[:, :, 2] * 256.0 * 256.0) / (
                 (256.0 * 256.0 * 256.0) - 1))  # 2.5ms
     gray_depth = 1000 * gray_depth

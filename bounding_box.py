@@ -82,7 +82,7 @@ def calculate_occlusion_stats(image, vertices_pos2d, depth_map, draw_vertices=Tr
     return num_visible_vertices, num_vertices_outside_camera
 
 
-def create_kitti_datapoint(agent, intrinsic_mat, extrinsic_mat, image, depth_image, player, rotRP, draw_3D_bbox=True):
+def create_kitti_datapoint(agent, intrinsic_mat, extrinsic_mat, image, depth_map, player, rotRP, draw_3D_bbox=True):
     """ Calculates the bounding box of the given agent, and returns a KittiDescriptor which describes the object to
     be labeled """
     obj_type, agent_transform, bbox_transform, ext, location = transforms_from_agent(
@@ -94,7 +94,6 @@ def create_kitti_datapoint(agent, intrinsic_mat, extrinsic_mat, image, depth_ima
         return image, None
     vertices_pos2d = bbox_2d_from_agent(
         agent, intrinsic_mat, extrinsic_mat, ext, bbox_transform, agent_transform, rotRP)
-    depth_map = depth_to_array(depth_image)
     num_visible_vertices, num_vertices_outside_camera = calculate_occlusion_stats(
         image, vertices_pos2d, depth_map, draw_vertices=draw_3D_bbox)
 

@@ -133,7 +133,7 @@ class SynchronyModel(object):
     def _span_player(self):
         """create our target vehicle"""
         my_vehicle_bp = random.choice(self.blueprint_library.filter("vehicle.lincoln.mkz2017"))
-        location = carla.Location(50, 5, 0.5)
+        location = carla.Location(40, 10, 0.5)
         rotation = carla.Rotation(0, 0, 0)
         transform_vehicle = carla.Transform(location, rotation)
         my_vehicle = self.world.spawn_actor(my_vehicle_bp, transform_vehicle)
@@ -176,7 +176,7 @@ class SynchronyModel(object):
         self.sensors.append(my_camera_d)
         self.sensors.append(my_lidar)
 
-        # camera intrinsic
+        # camera intrinsic  TODO: ARRAY DI CAMERA, INTRINSIC, EXTRINSIC, ...
         k = np.identity(3)
         k[0, 2] = WINDOW_WIDTH_HALF
         k[1, 2] = WINDOW_HEIGHT_HALF
@@ -328,8 +328,7 @@ class SynchronyModel(object):
         save_groundplanes(
             groundplane_fname, self.player, LIDAR_HEIGHT_POS)
         save_ref_files(OUTPUT_FOLDER, self.captured_frame_no)
-        save_image_data(
-            img_fname, self.main_image)
+        save_image_data(img_fname, self.main_image)
         save_kitti_data(kitti_fname, datapoints)
 
         save_calibration_matrices(
@@ -344,13 +343,19 @@ class SynchronyModel(object):
         image = image.copy()
         # Remove this
         rotRP = np.identity(3)
-        # Stores all datapoints for the current frames
+
+        if not GEN_DATA:
+            return image, datapoints
+
+        # Calculate depth map once for the current frame (instead of once for each agent)
+        depth_map = image_converter.depth_to_array(self.depth_image)
+
+        # Stores all datapoints for the current frame
         for agent in self.non_player:
-            if GEN_DATA:
-                image, kitti_datapoint = create_kitti_datapoint(
-                    agent, self.intrinsic, self.extrinsic, image, self.depth_image, self.player, rotRP)
-                if kitti_datapoint:
-                    datapoints.append(kitti_datapoint)
+            image, kitti_datapoint = create_kitti_datapoint(
+                agent, self.intrinsic, self.extrinsic, image, depth_map, self.player, rotRP)
+            if kitti_datapoint:
+                datapoints.append(kitti_datapoint)
 
         return image, datapoints
 
