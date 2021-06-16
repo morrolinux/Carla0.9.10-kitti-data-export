@@ -48,11 +48,11 @@ for folder in folders:
     maybe_create_dir(directory)
 
 """ DATA SAVE PATHS """
-GROUNDPLANE_PATH = os.path.join(OUTPUT_FOLDER, 'planes/{0:06}.txt')
+GROUNDPLANE_PATH = os.path.join(OUTPUT_FOLDER, 'planes/{0:06}_{1:1}.txt')
 LIDAR_PATH = os.path.join(OUTPUT_FOLDER, 'velodyne/{0:06}.bin')
-LABEL_PATH = os.path.join(OUTPUT_FOLDER, 'label_2/{0:06}.txt')
-IMAGE_PATH = os.path.join(OUTPUT_FOLDER, 'image_2/{0:06}.png')
-CALIBRATION_PATH = os.path.join(OUTPUT_FOLDER, 'calib/{0:06}.txt')
+LABEL_PATH = os.path.join(OUTPUT_FOLDER, 'label_2/{0:06}_{1:1}.txt')
+IMAGE_PATH = os.path.join(OUTPUT_FOLDER, 'image_2/{0:06}_{1:1}.png')
+CALIBRATION_PATH = os.path.join(OUTPUT_FOLDER, 'calib/{0:06}_{1:1}.txt')
 
 
 class SynchronyModel(object):
@@ -358,12 +358,12 @@ class SynchronyModel(object):
     def _save_training_files(self, datapoints, point_cloud, cam_idx):
         """ Save data in Kitti dataset format """
         logging.info("Attempting to save at frame no {}, frame no: {}".format(self.frame, self.captured_frame_no))
-        groundplane_fname = GROUNDPLANE_PATH.format(self.captured_frame_no)
+        groundplane_fname = GROUNDPLANE_PATH.format(self.captured_frame_no, cam_idx)
         lidar_fname = LIDAR_PATH.format(self.captured_frame_no)
 
-        kitti_fname = LABEL_PATH.format(self.captured_frame_no) + "-" + str(cam_idx)
-        img_fname = IMAGE_PATH.format(self.captured_frame_no) + "-" + str(cam_idx)
-        calib_filename = CALIBRATION_PATH.format(self.captured_frame_no) + "-" + str(cam_idx)
+        kitti_fname = LABEL_PATH.format(self.captured_frame_no, cam_idx)
+        img_fname = IMAGE_PATH.format(self.captured_frame_no, cam_idx)
+        calib_filename = CALIBRATION_PATH.format(self.captured_frame_no, cam_idx)
 
         save_groundplanes(groundplane_fname, self.player, LIDAR_HEIGHT_POS)
         save_ref_files(OUTPUT_FOLDER, self.captured_frame_no)
