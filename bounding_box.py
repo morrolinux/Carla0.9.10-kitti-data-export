@@ -85,20 +85,17 @@ def calculate_occlusion_stats(image, vertices_pos2d, depth_map, draw_vertices=Tr
 def create_kitti_datapoint(agent, intrinsic_mat, extrinsic_mat, image, depth_map, player, rotRP, draw_3D_bbox=True):
     """ Calculates the bounding box of the given agent, and returns a KittiDescriptor which describes the object to
     be labeled """
-    obj_type, agent_transform, bbox_transform, ext, location = transforms_from_agent(
-        agent)
+    obj_type, agent_transform, bbox_transform, ext, location = transforms_from_agent(agent)
 
     if obj_type is None:
         logging.warning(
             "Could not get bounding box for agent. Object type is None")
         return image, None
-    vertices_pos2d = bbox_2d_from_agent(
-        agent, intrinsic_mat, extrinsic_mat, ext, bbox_transform, agent_transform, rotRP)
+    vertices_pos2d = bbox_2d_from_agent(agent, intrinsic_mat, extrinsic_mat, ext, bbox_transform, agent_transform, rotRP)
     num_visible_vertices, num_vertices_outside_camera = calculate_occlusion_stats(
         image, vertices_pos2d, depth_map, draw_vertices=draw_3D_bbox)
 
-    midpoint = midpoint_from_agent_location(
-        image, location, extrinsic_mat, intrinsic_mat)
+    midpoint = midpoint_from_agent_location(image, location, extrinsic_mat, intrinsic_mat)
     # At least N vertices has to be visible in order to draw bbox
     if num_visible_vertices >= MIN_VISIBLE_VERTICES_FOR_RENDER and num_vertices_outside_camera < MIN_VISIBLE_VERTICES_FOR_RENDER:
         bbox_2d = calc_projected_2d_bbox(vertices_pos2d)

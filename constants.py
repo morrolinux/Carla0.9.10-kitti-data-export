@@ -47,3 +47,5 @@ NUM_OF_WALKERS = 30
 FILTERW = 'walker.pedestrian.*'
 FILTERV = 'vehicle.*'
 NUM_OF_VEHICLES = 20
+
+LIDAR_ENABLED = False

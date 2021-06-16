@@ -372,7 +372,9 @@ class SynchronyModel(object):
         save_kitti_data(kitti_fname, datapoints)
         save_calibration_matrices(calib_filename, self.intrinsics[cam_idx], self.extrinsics[cam_idx])
 
-        save_lidar_data(lidar_fname, point_cloud)
+        if cam_idx == 0:
+            if LIDAR_ENABLED:
+                save_lidar_data(lidar_fname, point_cloud)
 
     def generate_datapoints(self, image, idx):
         """ Returns a list of datapoints (labels and such) that are generated this frame together with the main image
@@ -460,15 +462,19 @@ def main():
                 for cam, f in enumerate(futures):
                     image, datapoints = f.result()
 
-                    if cam == 2:
+                    if cam == 0:
                         draw_image(display, image)
 
                     if datapoints and (step % args.ds_interval == 0):
                         print("step", step, "saving image from cam", cam)
-                        data = np.copy(np.frombuffer(sync_mode.point_cloud.raw_data, dtype=np.dtype('f4')))
-                        data = np.reshape(data, (int(data.shape[0] / 4), 4))
-                        # Isolate the 3D data
-                        points = data[:, :-1]
+                        if LIDAR_ENABLED:
+                            data = np.copy(np.frombuffer(sync_mode.point_cloud.raw_data, dtype=np.dtype('f4')))
+                            data = np.reshape(data, (int(data.shape[0] / 4), 4))
+                            # Isolate the 3D data
+                            points = data[:, :-1]
+                        else:
+                            points = None
+
                         # transform to car space
                         # points = np.append(points, np.ones((points.shape[0], 1)), axis=1)
                         # points = np.dot(sync_mode.player.get_transform().get_matrix(), points.T).T
