@@ -234,6 +234,8 @@ class SynchronyModel(object):
         blueprints = sorted(blueprints, key=lambda bp: bp.id)
 
         spawn_points = self.world.get_map().get_spawn_points()
+        spawn_points = [sp for sp in spawn_points if np.linalg.norm(
+            (np.array((sp.location.x, sp.location.y, sp.location.z)), np.array(CAR_SPAWN_LOCATION))) < 150]
         number_of_spawn_points = len(spawn_points)
         if NUM_OF_VEHICLES < number_of_spawn_points:
             random.shuffle(spawn_points)
@@ -491,7 +493,6 @@ def main():
                 sync_mode.captured_frame_no += 1
                 step = step+1
                 fps = round(1.0 / snapshot.timestamp.delta_seconds)
-
 
                 display.blit(
                     font.render('% 5d FPS (real)' % clock.get_fps(), True, (255, 255, 255)),
