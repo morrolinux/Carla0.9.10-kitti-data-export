@@ -136,7 +136,7 @@ class SynchronyModel(object):
     def _span_player(self):
         """create our target vehicle"""
         my_vehicle_bp = random.choice(self.blueprint_library.filter("vehicle.lincoln.mkz2017"))
-        location = carla.Location(50, 10, 0.5)
+        location = carla.Location(CAR_SPAWN_LOCATION[0], CAR_SPAWN_LOCATION[1], CAR_SPAWN_LOCATION[2])
         rotation = carla.Rotation(0, 0, 0)
         transform_vehicle = carla.Transform(location, rotation)
         my_vehicle = self.world.spawn_actor(my_vehicle_bp, transform_vehicle)
@@ -442,6 +442,7 @@ def main():
         try:
             step = 1
             while True:
+
                 if should_quit():
                     break
                 clock.tick()
@@ -456,13 +457,14 @@ def main():
                 sync_mode.extrinsics = [np.mat(sync_mode.cameras[i].get_transform().get_matrix())
                                         for i in range(len(sync_mode.cameras))]
 
+
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     futures = [executor.submit(sync_mode.generate_datapoints, img, i) for i, img in enumerate(images)]
 
                 for cam, f in enumerate(futures):
                     image, datapoints = f.result()
 
-                    if cam == 0:
+                    if cam == 3:
                         draw_image(display, image)
 
                     if datapoints and (step % args.ds_interval == 0):
@@ -490,6 +492,7 @@ def main():
                 step = step+1
                 fps = round(1.0 / snapshot.timestamp.delta_seconds)
 
+
                 display.blit(
                     font.render('% 5d FPS (real)' % clock.get_fps(), True, (255, 255, 255)),
                     (8, 10))
@@ -497,6 +500,7 @@ def main():
                     font.render('% 5d FPS (simulated)' % fps, True, (255, 255, 255)),
                     (8, 28))
                 pygame.display.flip()
+
         finally:
             print('destroying actors.')
             for actor in sync_mode.actor_list:
