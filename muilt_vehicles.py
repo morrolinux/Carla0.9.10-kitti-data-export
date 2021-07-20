@@ -59,12 +59,9 @@ class SynchronyModel(object):
     def __init__(self):
         self.world, self.init_setting, self.client, self.traffic_manager = self._make_setting()
         self.blueprint_library = self.world.get_blueprint_library()
-        self.locations = [carla.Location(40, 10, 6), carla.Location(50, 10, 6)]
-        self.rotations = [carla.Rotation(0, 0, 0), carla.Rotation(10, 0, 0)]
-        self.weather_conditions = ['sunny', 'rainy', 'cloudy', 'foggy']
-        self.lighting_conditions = ['dawn', 'morning', 'noon', 'afternoon']
+        self.locations = [carla.Location(50.8, -13.9, 5.12)]
+        self.rotations = [carla.Rotation(-2.48, 156.4, 0.000004)]
         self.classes = ['Car', 'Pedestrian', 'Cyclist']
-        self.ds_counter = self.init_ds_counter()
         self.non_player = []
         self.actor_list = []
         self.frame = None
@@ -77,7 +74,39 @@ class SynchronyModel(object):
         self.point_cloud = None
         self.extrinsic = None
         self.intrinsic, self.my_camera = self._span_spectator(self.locations[0], self.rotations[0])
+        self.weather_conditions = self.create_weather_presets()
+        self.ds_counter = self.init_ds_counter()
         self._span_non_player()
+
+    def create_weather_presets(self):
+        weather_conditions = [
+
+            # tardo pomeriggio, pozzanghere e nebbia
+            carla.WeatherParameters(cloudiness=20.000000, 
+                                    precipitation=0.000000, precipitation_deposits=50.000000, wind_intensity=0.350000, 
+                                    sun_azimuth_angle=10.000000, sun_altitude_angle=5.000000, 
+                                    fog_density=30.000000, fog_distance=0.000000, fog_falloff=0.000000, 
+                                    wetness=0.000000),
+
+            carla.WeatherParameters.ClearNoon,
+            carla.WeatherParameters.CloudyNoon,
+            carla.WeatherParameters.WetCloudyNoon,
+            carla.WeatherParameters.HardRainNoon,
+
+            carla.WeatherParameters.ClearSunset,
+            carla.WeatherParameters.CloudySunset,
+            carla.WeatherParameters.WetSunset,
+            # carla.WeatherParameters.WetCloudySunset,
+            # carla.WeatherParameters.MidRainSunset,
+            carla.WeatherParameters.HardRainSunset,
+            ]
+        return weather_conditions
+
+    def set_weather(self, w):
+        print(self.world.get_weather())
+        weather = carla.WeatherParameters(sun_altitude_angle=70.0)
+        self.world.set_weather(w)
+        print(self.world.get_weather())
 
     def __enter__(self):
         # set the sensor listener function
@@ -94,16 +123,13 @@ class SynchronyModel(object):
     def init_ds_counter(self):
         dsc = {}
         for w in self.weather_conditions:
-            for l in self.lighting_conditions:
-                for loc in self.locations:  
-                    for c in self.classes:
-                        if w not in dsc.keys():
-                            dsc[w] = {}
-                        if l not in dsc[w].keys():
-                            dsc[w][l] = {}
-                        if loc not in dsc[w][l].keys():
-                            dsc[w][l][loc] = {}
-                        dsc[w][l][loc][c] = 0
+            for loc in self.locations:  
+                for c in self.classes:
+                    if w not in dsc.keys():
+                        dsc[w] = {}
+                    if loc not in dsc[w].keys():
+                        dsc[w][loc] = {}
+                    dsc[w][loc][c] = 0
         return dsc
 
     def current_captured_frame_num(self):
@@ -425,63 +451,62 @@ def main():
             for weather, weather_dict in sync_mode.ds_counter.items():
                 print("*" * 20, "NEW weather:", weather, "*" * 20)
 
-                for lighting, lighting_dict in weather_dict.items():
-                    print("=" * 10, "NEW lighting:", lighting, "=" * 10)
+                sync_mode.set_weather(weather)
 
-                    for loc_idx, location in enumerate(lighting_dict.keys()):
-                        print("-" * 5, "NEW location:", location, "-" * 5)
-                        sync_mode.intrinsic, sync_mode.my_camera = sync_mode._span_spectator(location, sync_mode.rotations[loc_idx])
+                for loc_idx, location in enumerate(weather_dict.keys()):
+                    print("-" * 5, "NEW location:", location, "-" * 5)
+                    sync_mode.intrinsic, sync_mode.my_camera = sync_mode._span_spectator(location, sync_mode.rotations[loc_idx])
 
-                        # Stop when we reach minimum criteria (2K samples for each class for each weather condition)
-                        while min(sync_mode.ds_counter[weather][lighting][location].values()) < 2000/len(sync_mode.lighting_conditions)/len(sync_mode.locations):
-        
-                            if should_quit():
-                                break
+                    # Stop when we reach minimum criteria (2K samples for each class for each weather condition)
+                    while min(sync_mode.ds_counter[weather][location].values()) < 2000/len(sync_mode.locations):
+    
+                        if should_quit():
+                            break
 
-                            if step % 60 is 0:
-                                print(sync_mode.player.get_transform())
+                        if step % 60 is 0:
+                            print(sync_mode.player.get_transform())
 
-                            clock.tick()
-                            snapshot, sync_mode.main_image, sync_mode.depth_image, sync_mode.point_cloud = sync_mode.tick(timeout=2.0)
+                        clock.tick()
+                        snapshot, sync_mode.main_image, sync_mode.depth_image, sync_mode.point_cloud = sync_mode.tick(timeout=2.0)
 
-                            image = image_converter.to_rgb_array(sync_mode.main_image)
-                            sync_mode.extrinsic = np.mat(sync_mode.my_camera.get_transform().get_matrix())
+                        image = image_converter.to_rgb_array(sync_mode.main_image)
+                        sync_mode.extrinsic = np.mat(sync_mode.my_camera.get_transform().get_matrix())
 
-                            images = [image]
-                            with concurrent.futures.ThreadPoolExecutor() as executor:
-                                futures = [executor.submit(sync_mode.generate_datapoints, img) for img in images]
-                            image, datapoints = futures[-1].result()
+                        images = [image]
+                        with concurrent.futures.ThreadPoolExecutor() as executor:
+                            futures = [executor.submit(sync_mode.generate_datapoints, img) for img in images]
+                        image, datapoints = futures[-1].result()
 
-                            if datapoints and step % args.ds_interval is 0:
-                                data = np.copy(np.frombuffer(sync_mode.point_cloud.raw_data, dtype=np.dtype('f4')))
-                                data = np.reshape(data, (int(data.shape[0] / 4), 4))
-                                # Isolate the 3D data
-                                points = data[:, :-1]
-                                # transform to car space
-                                # points = np.append(points, np.ones((points.shape[0], 1)), axis=1)
-                                # points = np.dot(sync_mode.player.get_transform().get_matrix(), points.T).T
-                                # points = points[:, :-1]
-                                # points[:, 2] -= LIDAR_HEIGHT_POS
+                        if datapoints and step % args.ds_interval is 0:
+                            data = np.copy(np.frombuffer(sync_mode.point_cloud.raw_data, dtype=np.dtype('f4')))
+                            data = np.reshape(data, (int(data.shape[0] / 4), 4))
+                            # Isolate the 3D data
+                            points = data[:, :-1]
+                            # transform to car space
+                            # points = np.append(points, np.ones((points.shape[0], 1)), axis=1)
+                            # points = np.dot(sync_mode.player.get_transform().get_matrix(), points.T).T
+                            # points = points[:, :-1]
+                            # points[:, 2] -= LIDAR_HEIGHT_POS
 
-                                # save training files asynchronously
-                                threading.Thread(target=sync_mode._save_training_files, args=(datapoints, points,)).start()
-                                sync_mode.captured_frame_no += 1
+                            # save training files asynchronously
+                            threading.Thread(target=sync_mode._save_training_files, args=(datapoints, points,)).start()
+                            sync_mode.captured_frame_no += 1
 
-                                # Increment dataset counters
-                                for dp in datapoints:
-                                    sync_mode.ds_counter[weather][lighting][location][dp.type] = sync_mode.ds_counter[weather][lighting][location][dp.type] + 1
-                                print(sync_mode.ds_counter[weather][lighting][location])
+                            # Increment dataset counters
+                            for dp in datapoints:
+                                sync_mode.ds_counter[weather][location][dp.type] = sync_mode.ds_counter[weather][location][dp.type] + 1
+                            print(sync_mode.ds_counter[weather][location])
 
-                            step = step+1
-                            fps = round(1.0 / snapshot.timestamp.delta_seconds)
-                            draw_image(display, image)
-                            display.blit(
-                                font.render('% 5d FPS (real)' % clock.get_fps(), True, (255, 255, 255)),
-                                (8, 10))
-                            display.blit(
-                                font.render('% 5d FPS (simulated)' % fps, True, (255, 255, 255)),
-                                (8, 28))
-                            pygame.display.flip()
+                        step = step+1
+                        fps = round(1.0 / snapshot.timestamp.delta_seconds)
+                        draw_image(display, image)
+                        display.blit(
+                            font.render('% 5d FPS (real)' % clock.get_fps(), True, (255, 255, 255)),
+                            (8, 10))
+                        display.blit(
+                            font.render('% 5d FPS (simulated)' % fps, True, (255, 255, 255)),
+                            (8, 28))
+                        pygame.display.flip()
 
         finally:
             print('destroying actors.')
