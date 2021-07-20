@@ -27,7 +27,7 @@ from dataexport import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--overwrite", action="store_true", default=False, help="ow dataset. append otherwise")
-parser.add_argument("--camera-fov", default="90", type=str, help="Camera FOV")
+parser.add_argument("--camera-fov", default="120", type=str, help="Camera FOV")
 parser.add_argument("--ds-interval", default=100, type=int, help="Interval between frames to be exported")
 args = parser.parse_args()
 
@@ -178,7 +178,7 @@ class SynchronyModel(object):
         self.sensors.append(my_camera_d)
         self.sensors.append(my_lidar)
 
-        # camera intrinsic  TODO: ARRAY DI CAMERA, INTRINSIC, EXTRINSIC, ...
+        # camera intrinsic
         k = np.identity(3)
         k[0, 2] = WINDOW_WIDTH_HALF
         k[1, 2] = WINDOW_HEIGHT_HALF
@@ -412,7 +412,6 @@ def main():
                 image = image_converter.to_rgb_array(sync_mode.main_image)
                 sync_mode.extrinsic = np.mat(sync_mode.my_camera.get_transform().get_matrix())
 
-                # TODO: implement simultaneous multi-camera export
                 images = [image]
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     futures = [executor.submit(sync_mode.generate_datapoints, img) for img in images]
