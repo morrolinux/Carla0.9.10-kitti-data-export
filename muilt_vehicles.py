@@ -79,14 +79,100 @@ class SynchronyModel(object):
         self._span_non_player()
 
     def create_weather_presets(self):
+        # sun_altitude_angle=-7.0 # night
+        # sun_altitude_angle=1.0 # sunset
+        # sun_altitude_angle=8.0 # evening
+        # sun_altitude_angle=30.0 # afternoon
+        # sun_altitude_angle=90 # noon
+        # sun_altitude_angle=130 # morning
+        # sun_altitude_angle=177.0 # early morning
+
         weather_conditions = [
 
-            # tardo pomeriggio, pozzanghere e nebbia
-            carla.WeatherParameters(cloudiness=20.000000, 
-                                    precipitation=0.000000, precipitation_deposits=50.000000, wind_intensity=0.350000, 
-                                    sun_azimuth_angle=10.000000, sun_altitude_angle=5.000000, 
-                                    fog_density=30.000000, fog_distance=0.000000, fog_falloff=0.000000, 
-                                    wetness=0.000000),
+            # early morning with fog
+            carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000, 
+                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=177.0, 
+                                    fog_density=30.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
+            # early morning
+            carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000, 
+                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=177.0, 
+                                    fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
+            # sunny morning
+            carla.WeatherParameters(cloudiness=0.000000, wind_intensity=0.350000, 
+                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=130, 
+                                    fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
+            # rainy morning
+            carla.WeatherParameters(cloudiness=80.000000, wind_intensity=0.850000, 
+                                    precipitation=80.000000, precipitation_deposits=50.000000, wetness=40.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=130, 
+                                    fog_density=20.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
+            # sunny noon
+            carla.WeatherParameters(cloudiness=0.000000, wind_intensity=0.350000, 
+                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=90, 
+                                    fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
+            # sunny afternoon
+            carla.WeatherParameters(cloudiness=0.000000, wind_intensity=0.350000, 
+                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=60, 
+                                    fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
+            # foggy afternoon
+            carla.WeatherParameters(cloudiness=0.000000, wind_intensity=0.350000, 
+                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=60, 
+                                    fog_density=60.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
+            # cloudy afternoon
+            carla.WeatherParameters(cloudiness=70.000000, wind_intensity=0.350000, 
+                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=30, 
+                                    fog_density=10.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
+            # rainy afternoon
+            carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000,
+                                    precipitation=0.000000, precipitation_deposits=50.000000, wetness=0.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=30.000000, 
+                                    fog_density=30.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
+            # rainy evening with fog
+            carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000,
+                                    precipitation=5.000000, precipitation_deposits=50.000000, wetness=0.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=8.000000, 
+                                    fog_density=30.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
+            # sunny evening with fog
+            carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000,
+                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=8.000000, 
+                                    fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
+            # sunny sunset
+            carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000,
+                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=1.000000, 
+                                    fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
+                        
+            # clear night
+            carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000,
+                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=-7.000000, 
+                                    fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
+            # rainy night
+            carla.WeatherParameters(cloudiness=0.000000, wind_intensity=0.350000,
+                                    precipitation=30.000000, precipitation_deposits=50.000000, wetness=20.000000,
+                                    sun_azimuth_angle=0.000000, sun_altitude_angle=-7.000000, 
+                                    fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
+
 
             carla.WeatherParameters.ClearNoon,
             carla.WeatherParameters.CloudyNoon,
@@ -420,13 +506,23 @@ def draw_image(surface, image, blend=False):
     surface.blit(image_surface, (0, 0))
 
 
-def should_quit():
+def should_quit(sync_mode):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             return True
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_ESCAPE:
                 return True
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 4:
+                print("scroll wheel up")
+                sync_mode.world.set_weather(carla.WeatherParameters(sun_altitude_angle = sync_mode.world.get_weather().sun_altitude_angle + 1))
+                print("sun_altitude_angle=", sync_mode.world.get_weather().sun_altitude_angle, sep='')
+            elif event.button == 5:
+                print("scroll wheel down")
+                sync_mode.world.set_weather(carla.WeatherParameters(sun_altitude_angle = sync_mode.world.get_weather().sun_altitude_angle - 1))
+                print("sun_altitude_angle=", sync_mode.world.get_weather().sun_altitude_angle, sep='')
+
     return False
 
 def get_font():
@@ -460,7 +556,7 @@ def main():
                     # Stop when we reach minimum criteria (2K samples for each class for each weather condition)
                     while min(sync_mode.ds_counter[weather][location].values()) < 2000/len(sync_mode.locations):
     
-                        if should_quit():
+                        if should_quit(sync_mode):
                             break
 
                         if step % 60 is 0:
