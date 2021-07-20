@@ -59,6 +59,8 @@ class SynchronyModel(object):
     def __init__(self):
         self.world, self.init_setting, self.client, self.traffic_manager = self._make_setting()
         self.blueprint_library = self.world.get_blueprint_library()
+        self.locations = [carla.Location(40, 10, 6), carla.Location(50, 10, 6)]
+        self.rotations = [carla.Rotation(0, 0, 0), carla.Rotation(10, 0, 0)]
         self.non_player = []
         self.actor_list = []
         self.frame = None
@@ -70,7 +72,7 @@ class SynchronyModel(object):
         self.depth_image = None
         self.point_cloud = None
         self.extrinsic = None
-        self.intrinsic, self.my_camera = self._span_player()
+        self.intrinsic, self.my_camera = self._span_spectator(self.locations[0], self.rotations[0])
         self._span_non_player()
 
     def __enter__(self):
@@ -132,16 +134,16 @@ class SynchronyModel(object):
         world.apply_settings(settings)
         return world, init_setting, client, traffic_manager
 
-    def _span_player(self):
+    def _span_spectator(self, location, rotation):
         """create our target vehicle"""
-        my_vehicle_bp = random.choice(self.blueprint_library.filter("vehicle.lincoln.mkz2017"))
-        location = carla.Location(40, 10, 0.5)
-        rotation = carla.Rotation(0, 0, 0)
-        transform_vehicle = carla.Transform(location, rotation)
-        my_vehicle = self.world.spawn_actor(my_vehicle_bp, transform_vehicle)
-        k, my_camera = self._span_sensor(my_vehicle)
-        self.actor_list.append(my_vehicle)
-        self.player = my_vehicle
+        spectator = self.world.get_spectator()
+        
+        spectator.set_transform(carla.Transform(location, rotation))
+
+        k, my_camera = self._span_sensor(spectator)
+        # self.actor_list.append(spectator) # we don't want for the spectator to be destroyed upon client disconnection
+        self.player = spectator
+        
         return k, my_camera
 
     def _span_sensor(self, player):
@@ -382,6 +384,8 @@ def should_quit():
                 return True
     return False
 
+def change_location():
+    return False
 
 def get_font():
     fonts = [x for x in pygame.font.get_fonts()]
@@ -409,6 +413,9 @@ def main():
                 snapshot, sync_mode.main_image, sync_mode.depth_image, sync_mode.point_cloud = sync_mode.tick(
                     timeout=2.0)
 
+                if step % 60 is 0:
+                    print(sync_mode.player.get_transform())
+
                 image = image_converter.to_rgb_array(sync_mode.main_image)
                 sync_mode.extrinsic = np.mat(sync_mode.my_camera.get_transform().get_matrix())
 
@@ -418,6 +425,9 @@ def main():
                 image, datapoints = futures[-1].result()
 
                 if datapoints and step % args.ds_interval is 0:
+                    if change_location():
+                        sync_mode.intrinsic, sync_mode.my_camera = sync_mode._span_spectator(sync_mode.locations[1], sync_mode.rotations[1])
+
                     data = np.copy(np.frombuffer(sync_mode.point_cloud.raw_data, dtype=np.dtype('f4')))
                     data = np.reshape(data, (int(data.shape[0] / 4), 4))
                     # Isolate the 3D data
@@ -442,6 +452,7 @@ def main():
                     font.render('% 5d FPS (simulated)' % fps, True, (255, 255, 255)),
                     (8, 28))
                 pygame.display.flip()
+
         finally:
             print('destroying actors.')
             for actor in sync_mode.actor_list:
