@@ -439,6 +439,7 @@ def main():
         pygame.HWSURFACE | pygame.DOUBLEBUF)
     font = get_font()
     clock = pygame.time.Clock()
+    CAM_PREVIEW_IDX = 1
 
     with SynchronyModel() as sync_mode:
         try:
@@ -466,7 +467,7 @@ def main():
                 for cam, f in enumerate(futures):
                     image, datapoints = f.result()
 
-                    if cam == 3:
+                    if cam == CAM_PREVIEW_IDX:
                         draw_image(display, image)
 
                     if datapoints and (step % args.ds_interval == 0):
