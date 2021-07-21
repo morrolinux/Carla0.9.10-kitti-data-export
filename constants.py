@@ -1,6 +1,6 @@
 """ DATA GENERATION SETTINGS"""
 GEN_DATA = True  # Whether or not to save training data
-VISUALIZE_LIDAR = False
+VISUALIZE_LIDAR = True
 # How many frames to wait between each capture of screen, bounding boxes and lidar
 STEPS_BETWEEN_RECORDINGS = 10
 CLASSES_TO_LABEL = ["Vehicle", "Pedestrian"]
@@ -21,7 +21,7 @@ NUM_EMPTY_FRAMES_BEFORE_RESET = 100
 """ CARLA SETTINGS """
 CAMERA_HEIGHT_POS = 0
 LIDAR_HEIGHT_POS = CAMERA_HEIGHT_POS
-MIN_BBOX_AREA_IN_PX = 100
+MIN_BBOX_AREA_IN_PX = 80
 
 
 """ AGENT SETTINGS """

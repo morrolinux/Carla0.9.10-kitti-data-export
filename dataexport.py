@@ -7,6 +7,7 @@ import numpy as np
 import os
 import logging
 from utils import degrees_to_radians
+import math
 
 
 def save_groundplanes(planes_fname, player, lidar_height):
@@ -98,6 +99,58 @@ def save_kitti_data(filename, datapoints):
         f.write(out_str)
     logging.info("Wrote kitti data to %s", filename)
 
+def rot2eul(R):
+    beta = -np.arcsin(R[2,0])
+    alpha = np.arctan2(R[2,1]/np.cos(beta),R[2,2]/np.cos(beta))
+    gamma = np.arctan2(R[1,0]/np.cos(beta),R[0,0]/np.cos(beta))
+    return np.array((alpha, beta, gamma))
+
+def eul2rot(theta) :
+
+    R = np.array([[np.cos(theta[1])*np.cos(theta[2]),       np.sin(theta[0])*np.sin(theta[1])*np.cos(theta[2]) - np.sin(theta[2])*np.cos(theta[0]),      np.sin(theta[1])*np.cos(theta[0])*np.cos(theta[2]) + np.sin(theta[0])*np.sin(theta[2])],
+                  [np.sin(theta[2])*np.cos(theta[1]),       np.sin(theta[0])*np.sin(theta[1])*np.sin(theta[2]) + np.cos(theta[0])*np.cos(theta[2]),      np.sin(theta[1])*np.sin(theta[2])*np.cos(theta[0]) - np.sin(theta[0])*np.cos(theta[2])],
+                  [-np.sin(theta[1]),                        np.sin(theta[0])*np.cos(theta[1]),                                                           np.cos(theta[0])*np.cos(theta[1])]])
+
+    return R
+
+# Checks if a matrix is a valid rotation matrix.
+def isRotationMatrix(R) :
+    Rt = np.transpose(R)
+    shouldBeIdentity = np.dot(Rt, R)
+    I = np.identity(3, dtype = R.dtype)
+    n = np.linalg.norm(I - shouldBeIdentity)
+    return n < 1e-6
+
+# Calculates rotation matrix to euler angles
+# The result is the same as MATLAB except the order
+# of the euler angles ( x and z are swapped ).
+def rotationMatrixToEulerAngles(R) :
+    yaw=math.atan2(R[1,0], R[0,0])
+    pitch=math.atan2(-R[2,0], math.sqrt(R[2,1]**2+R[2,2]**2))
+    roll=math.atan2(R[2,1], R[2,2])
+    return pitch, yaw, roll
+
+# Calculates Rotation Matrix given euler angles.
+def eulerAnglesToRotationMatrix(theta) :
+
+    R_x = np.array([[1,         0,                  0                   ],
+                    [0,         math.cos(theta[0]), -math.sin(theta[0]) ],
+                    [0,         math.sin(theta[0]), math.cos(theta[0])  ]
+                    ])
+
+    R_y = np.array([[math.cos(theta[1]),    0,      math.sin(theta[1])  ],
+                    [0,                     1,      0                   ],
+                    [-math.sin(theta[1]),   0,      math.cos(theta[1])  ]
+                    ])
+
+    R_z = np.array([[math.cos(theta[2]),    -math.sin(theta[2]),    0],
+                    [math.sin(theta[2]),    math.cos(theta[2]),     0],
+                    [0,                     0,                      1]
+                    ])
+
+    R = np.dot(R_z, np.dot( R_y, R_x ))
+
+    return R
 
 def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat):
     """ Saves the calibration matrices to a file.
@@ -118,8 +171,29 @@ def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat):
     # KITTI format demands that we flatten in row-major order
     ravel_mode = 'C'
     P0 = intrinsic_mat
+    print("INTR:", intrinsic_mat)
+    print("EXTR:", extrinsic_mat)
     P0 = np.column_stack((P0, np.array([0, 0, 0])))
+
+    R = extrinsic_mat[:3, :3]
+    T = extrinsic_mat[:3, 3]
+    T = np.array([0, T[2,0], 0])
+    # T = np.array([0, 0, 0])
+
+    pitch, yaw, roll = rotationMatrixToEulerAngles(R)
+    R1 = np.array(eulerAnglesToRotationMatrix((0, roll, 0)))
+    RT1 = np.column_stack((R1, T))
+    RT1 = np.row_stack((RT1, np.array([0, 0, 0, 1])))
+    print("RT1:", RT1)
+    P0 = np.matmul(P0, RT1)
+
+    # P0 = np.matmul(P0, extrinsic_mat)
+
+    print("P0:", P0)
     P0 = np.ravel(P0, order=ravel_mode)
+    # P0[7] = -22.306694
+    print("P0:", P0)
+
     R0 = np.identity(3)
     TR_velodyne = np.array([[0, -1, 0],
                             [0, 0, -1],

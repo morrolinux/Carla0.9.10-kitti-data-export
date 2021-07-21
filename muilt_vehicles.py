@@ -79,14 +79,14 @@ class SynchronyModel(object):
 
     def create_locations(self):
         locations = [
-            carla.Transform(carla.Location(50.8, -13.9, 5.12), carla.Rotation(-2.48, 156.4, 0.000004)), 
+            carla.Transform(carla.Location(x=-55.640671, y=3.514651, z=5.624344), carla.Rotation(pitch=-30.182434, yaw=-169.737045, roll=0.000025)),
+            carla.Transform(carla.Location(x=173.431839, y=53.041073, z=4.272343), carla.Rotation(pitch=-38.675350, yaw=132.347687, roll=0.000067)),
+            carla.Transform(carla.Location(x=160.032928, y=71.224144, z=5.341573), carla.Rotation(pitch=-41.482201, yaw=-140.674652, roll=0.000042)),
+            carla.Transform(carla.Location(x=160.032928, y=71.224144, z=5.341573), carla.Rotation(pitch=-41.482201, yaw=-140.674652, roll=0.000042)),
+            carla.Transform(carla.Location(x=50.8, y=-13.9, z=5.12), carla.Rotation(pitch=-2.48, yaw=156.4, roll=0.000004)), 
             carla.Transform(carla.Location(x=247.920151, y=73.704063, z=6.082335), carla.Rotation(pitch=-22.306694, yaw=-131.522003, roll=0.000102)), 
             carla.Transform(carla.Location(x=-57.657494, y=3.750844, z=5.813370), carla.Rotation(pitch=-26.488121, yaw=-20.079067, roll=0.000140)),
             carla.Transform(carla.Location(x=-67.881264, y=9.866474, z=6.102913), carla.Rotation(pitch=-21.914791, yaw=-103.430275, roll=0.000133)),
-            carla.Transform(carla.Location(x=-14.310817, y=-22.241655, z=6.655645), carla.Rotation(pitch=-26.289240, yaw=-57.669415, roll=0.000030)),
-            carla.Transform(carla.Location(x=-55.640671, y=3.514651, z=5.624344), carla.Rotation(pitch=-30.182434, yaw=-169.737045, roll=0.000025)),
-            carla.Transform(carla.Location(x=160.032928, y=71.224144, z=5.341573), carla.Rotation(pitch=-41.482201, yaw=-140.674652, roll=0.000042)),
-            carla.Transform(carla.Location(x=173.431839, y=53.041073, z=4.272343), carla.Rotation(pitch=-38.675350, yaw=132.347687, roll=0.000067))
             ]
         return locations
 
@@ -265,7 +265,7 @@ class SynchronyModel(object):
         camera_d_bp.set_attribute('image_size_y', str(WINDOW_HEIGHT))
         camera_d_bp.set_attribute('fov', args.camera_fov) # 45 60 90 120 150 180
 
-        lidar_bp.set_attribute('range', '50')
+        lidar_bp.set_attribute('range', '200')
         lidar_bp.set_attribute('rotation_frequency', '20')
         lidar_bp.set_attribute('upper_fov', '2')
         lidar_bp.set_attribute('lower_fov', '-26.8')
