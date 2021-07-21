@@ -59,8 +59,6 @@ class SynchronyModel(object):
     def __init__(self):
         self.world, self.init_setting, self.client, self.traffic_manager = self._make_setting()
         self.blueprint_library = self.world.get_blueprint_library()
-        self.locations = [carla.Location(50.8, -13.9, 5.12)]
-        self.rotations = [carla.Rotation(-2.48, 156.4, 0.000004)]
         self.classes = ['Car', 'Pedestrian', 'Cyclist']
         self.non_player = []
         self.actor_list = []
@@ -73,20 +71,24 @@ class SynchronyModel(object):
         self.depth_image = None
         self.point_cloud = None
         self.extrinsic = None
-        self.intrinsic, self.my_camera = self._span_spectator(self.locations[0], self.rotations[0])
+        self.intrinsic, self.my_camera = self._span_spectator(location=None, rotation=None)
+        self.locations = self.create_locations()
         self.weather_conditions = self.create_weather_presets()
         self.ds_counter = self.init_ds_counter()
         self._span_non_player()
 
-    def create_weather_presets(self):
-        # sun_altitude_angle=-7.0 # night
-        # sun_altitude_angle=1.0 # sunset
-        # sun_altitude_angle=8.0 # evening
-        # sun_altitude_angle=30.0 # afternoon
-        # sun_altitude_angle=90 # noon
-        # sun_altitude_angle=130 # morning
-        # sun_altitude_angle=177.0 # early morning
+    def create_locations(self):
+        locations = [
+            carla.Transform(carla.Location(50.8, -13.9, 5.12), carla.Rotation(-2.48, 156.4, 0.000004)), 
+            carla.Transform(carla.Location(x=247.920151, y=73.704063, z=6.082335), carla.Rotation(pitch=-22.306694, yaw=-131.522003, roll=0.000102)), 
+            carla.Transform(carla.Location(x=-57.657494, y=3.750844, z=5.813370), carla.Rotation(pitch=-26.488121, yaw=-20.079067, roll=0.000140)),
+            carla.Transform(carla.Location(x=-67.881264, y=9.866474, z=6.102913), carla.Rotation(pitch=-21.914791, yaw=-103.430275, roll=0.000133)),
+            carla.Transform(carla.Location(x=-14.310817, y=-22.241655, z=6.655645), carla.Rotation(pitch=-26.289240, yaw=-57.669415, roll=0.000030)),
+            carla.Transform(carla.Location(x=-55.640671, y=3.514651, z=5.624344), carla.Rotation(pitch=-30.182434, yaw=-169.737045, roll=0.000025))
+            ]
+        return locations
 
+    def create_weather_presets(self):
         weather_conditions = [
 
             # early morning with fog
@@ -112,30 +114,29 @@ class SynchronyModel(object):
                                     precipitation=80.000000, precipitation_deposits=50.000000, wetness=40.000000,
                                     sun_azimuth_angle=0.000000, sun_altitude_angle=130, 
                                     fog_density=20.000000, fog_distance=0.000000, fog_falloff=0.000000),
+            # # sunny noon
+            # carla.WeatherParameters(cloudiness=0.000000, wind_intensity=0.350000, 
+            #                         precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+            #                         sun_azimuth_angle=0.000000, sun_altitude_angle=90, 
+            #                         fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
 
-            # sunny noon
-            carla.WeatherParameters(cloudiness=0.000000, wind_intensity=0.350000, 
-                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
-                                    sun_azimuth_angle=0.000000, sun_altitude_angle=90, 
-                                    fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
-
-            # sunny afternoon
+            # sunny early afternoon
             carla.WeatherParameters(cloudiness=0.000000, wind_intensity=0.350000, 
                                     precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
                                     sun_azimuth_angle=0.000000, sun_altitude_angle=60, 
                                     fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
 
-            # foggy afternoon
+            # foggy early afternoon
             carla.WeatherParameters(cloudiness=0.000000, wind_intensity=0.350000, 
                                     precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
                                     sun_azimuth_angle=0.000000, sun_altitude_angle=60, 
                                     fog_density=60.000000, fog_distance=0.000000, fog_falloff=0.000000),
 
-            # cloudy afternoon
-            carla.WeatherParameters(cloudiness=70.000000, wind_intensity=0.350000, 
-                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
-                                    sun_azimuth_angle=0.000000, sun_altitude_angle=30, 
-                                    fog_density=10.000000, fog_distance=0.000000, fog_falloff=0.000000),
+            # # cloudy afternoon
+            # carla.WeatherParameters(cloudiness=70.000000, wind_intensity=0.350000, 
+            #                         precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+            #                         sun_azimuth_angle=0.000000, sun_altitude_angle=30, 
+            #                         fog_density=10.000000, fog_distance=0.000000, fog_falloff=0.000000),
 
             # rainy afternoon
             carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000,
@@ -149,17 +150,17 @@ class SynchronyModel(object):
                                     sun_azimuth_angle=0.000000, sun_altitude_angle=8.000000, 
                                     fog_density=30.000000, fog_distance=0.000000, fog_falloff=0.000000),
 
-            # sunny evening with fog
-            carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000,
-                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
-                                    sun_azimuth_angle=0.000000, sun_altitude_angle=8.000000, 
-                                    fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
+            # # sunny evening with fog
+            # carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000,
+            #                         precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+            #                         sun_azimuth_angle=0.000000, sun_altitude_angle=8.000000, 
+            #                         fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
 
-            # sunny sunset
-            carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000,
-                                    precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
-                                    sun_azimuth_angle=0.000000, sun_altitude_angle=1.000000, 
-                                    fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
+            # # sunny sunset
+            # carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000,
+            #                         precipitation=0.000000, precipitation_deposits=0.000000, wetness=0.000000,
+            #                         sun_azimuth_angle=0.000000, sun_altitude_angle=1.000000, 
+            #                         fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
                         
             # clear night
             carla.WeatherParameters(cloudiness=20.000000, wind_intensity=0.350000,
@@ -186,6 +187,9 @@ class SynchronyModel(object):
             # carla.WeatherParameters.MidRainSunset,
             carla.WeatherParameters.HardRainSunset,
             ]
+
+        weather_conditions = [carla.WeatherParameters.WetSunset]
+
         return weather_conditions
 
     def set_weather(self, w):
@@ -265,10 +269,14 @@ class SynchronyModel(object):
         world.apply_settings(settings)
         return world, init_setting, client, traffic_manager
 
-    def _span_spectator(self, location, rotation):
+    def _span_spectator(self, location=None, rotation=None):
         """create our target vehicle"""
         spectator = self.world.get_spectator()
-        
+
+        if location is None or rotation is None:
+            location = spectator.get_transform().location
+            rotation = spectator.get_transform().rotation
+
         spectator.set_transform(carla.Transform(location, rotation))
 
         k, my_camera = self._span_sensor(spectator)
@@ -543,15 +551,15 @@ def main():
 
     with SynchronyModel() as sync_mode:
         try:
-            step = 1
+            step = 0
             for weather, weather_dict in sync_mode.ds_counter.items():
-                print("*" * 20, "NEW weather:", weather, "*" * 20)
+                print("[{0:06d}]".format(step), "NEW WEATHER:", weather, "\n")
 
                 sync_mode.set_weather(weather)
 
                 for loc_idx, location in enumerate(weather_dict.keys()):
-                    print("-" * 5, "NEW location:", location, "-" * 5)
-                    sync_mode.intrinsic, sync_mode.my_camera = sync_mode._span_spectator(location, sync_mode.rotations[loc_idx])
+                    print("[{0:06d}]".format(step), "NEW LOCATION:", location, "\n")
+                    sync_mode.intrinsic, sync_mode.my_camera = sync_mode._span_spectator(location.location, location.rotation)
 
                     # Stop when we reach minimum criteria (2K samples for each class for each weather condition)
                     while min(sync_mode.ds_counter[weather][location].values()) < 2000/len(sync_mode.locations):
