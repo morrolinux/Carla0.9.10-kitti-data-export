@@ -79,11 +79,12 @@ class SynchronyModel(object):
 
     def create_locations(self):
         locations = [
-            carla.Transform(carla.Location(x=-55.640671, y=3.514651, z=5.624344), carla.Rotation(pitch=-30.182434, yaw=-169.737045, roll=0.000025)),
+            carla.Transform(carla.Location(x=-55.640671, y=3.514651, z=5.624344), carla.Rotation(pitch=-30.182434, yaw=-169.737045, roll=0.000025)), # original
+            carla.Transform(carla.Location(x=50.8, y=-13.9, z=5.12), carla.Rotation(pitch=-2.48, yaw=156.4, roll=0.000004)), 
+            # carla.Transform(carla.Location(x=-55.640671, y=3.514651, z=5.624344), carla.Rotation(pitch=0, yaw=-169.737045, roll=0.000025)), # debug
             carla.Transform(carla.Location(x=173.431839, y=53.041073, z=4.272343), carla.Rotation(pitch=-38.675350, yaw=132.347687, roll=0.000067)),
             carla.Transform(carla.Location(x=160.032928, y=71.224144, z=5.341573), carla.Rotation(pitch=-41.482201, yaw=-140.674652, roll=0.000042)),
             carla.Transform(carla.Location(x=160.032928, y=71.224144, z=5.341573), carla.Rotation(pitch=-41.482201, yaw=-140.674652, roll=0.000042)),
-            carla.Transform(carla.Location(x=50.8, y=-13.9, z=5.12), carla.Rotation(pitch=-2.48, yaw=156.4, roll=0.000004)), 
             carla.Transform(carla.Location(x=247.920151, y=73.704063, z=6.082335), carla.Rotation(pitch=-22.306694, yaw=-131.522003, roll=0.000102)), 
             carla.Transform(carla.Location(x=-57.657494, y=3.750844, z=5.813370), carla.Rotation(pitch=-26.488121, yaw=-20.079067, roll=0.000140)),
             carla.Transform(carla.Location(x=-67.881264, y=9.866474, z=6.102913), carla.Rotation(pitch=-21.914791, yaw=-103.430275, roll=0.000133)),
@@ -296,7 +297,7 @@ class SynchronyModel(object):
     def _span_non_player(self):
         """create autonomous vehicles and people"""
         blueprints = self.world.get_blueprint_library().filter(FILTERV)
-        # blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 4]
+        # blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 2]   # spawn only bikes
         blueprints = [x for x in blueprints if not x.id.endswith('isetta')]
         blueprints = [x for x in blueprints if not x.id.endswith('carlacola')]
         blueprints = [x for x in blueprints if not x.id.endswith('cybertruck')]

@@ -177,11 +177,16 @@ def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat):
 
     R = extrinsic_mat[:3, :3]
     T = extrinsic_mat[:3, 3]
-    T = np.array([0, T[2,0], 0])
-    # T = np.array([0, 0, 0])
+    # T = np.array([T[0,0], -T[2,0], T[1,0]])
+    # T = np.array([0, -T[2,0], 0])
+    T = np.array([0, 0, 0])
 
     pitch, yaw, roll = rotationMatrixToEulerAngles(R)
-    R1 = np.array(eulerAnglesToRotationMatrix((0, roll, 0)))
+    # R1 = np.array(eulerAnglesToRotationMatrix((-roll, 0, 0)))
+    # R1 = np.array(eulerAnglesToRotationMatrix((-pitch, 0, 0)))  # roll, pitch, yaw
+
+    R1 = np.array(eulerAnglesToRotationMatrix((0, 0, 0)))  # roll, pitch, yaw
+    
     RT1 = np.column_stack((R1, T))
     RT1 = np.row_stack((RT1, np.array([0, 0, 0, 1])))
     print("RT1:", RT1)
@@ -191,15 +196,18 @@ def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat):
 
     print("P0:", P0)
     P0 = np.ravel(P0, order=ravel_mode)
-    # P0[7] = -22.306694
     print("P0:", P0)
 
     R0 = np.identity(3)
     TR_velodyne = np.array([[0, -1, 0],
                             [0, 0, -1],
                             [1, 0, 0]])
+                            
     # Add translation vector from velo to camera. This is 0 because the position of camera and lidar is equal in our configuration.
     TR_velodyne = np.column_stack((TR_velodyne, np.array([0, 0, 0])))
+
+    # TR_velodyne = np.linalg.inv(RT1)[:3, :4] # Debug
+
     TR_imu_to_velo = np.identity(3)
     TR_imu_to_velo = np.column_stack((TR_imu_to_velo, np.array([0, 0, 0])))
 
