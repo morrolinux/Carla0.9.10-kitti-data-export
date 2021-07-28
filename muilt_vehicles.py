@@ -515,17 +515,18 @@ def main():
         pygame.HWSURFACE | pygame.DOUBLEBUF)
     font = get_font()
     clock = pygame.time.Clock()
+    splitlog = open("splitlog.txt", "w")
 
     with SynchronyModel() as sync_mode:
         try:
             step = 0
             for weather, weather_dict in sync_mode.ds_counter.items():
-                print("[{0:06d}]".format(step), "NEW WEATHER:", weather, "\n")
+                splitlog.write("[{0:06d}] NEW WEATHER: {1}\n".format(step, weather))
 
                 sync_mode.set_weather(weather)
 
                 for loc_idx, location in enumerate(weather_dict.keys()):
-                    print("[{0:06d}]".format(step), "NEW LOCATION:", location, "\n")
+                    splitlog.write("[{0:06d}] NEW LOCATION: {1}\n".format(step, location))
                     sync_mode.intrinsic, sync_mode.my_camera = sync_mode._span_spectator(location.location, location.rotation)
                     print("map name:", sync_mode.world.get_map().name)
 

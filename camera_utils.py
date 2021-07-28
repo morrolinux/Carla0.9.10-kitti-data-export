@@ -3,8 +3,6 @@ from numpy.linalg import pinv, inv
 from constants import WINDOW_HEIGHT, WINDOW_WIDTH
 
 
-
-
 def calc_projected_2d_bbox(vertices_pos2d):
     """ Takes in all vertices in pixel projection and calculates min and max of all x and y coordinates.
         Returns left top, right bottom pixel coordinates for the 2d bounding box as a list of four values.
