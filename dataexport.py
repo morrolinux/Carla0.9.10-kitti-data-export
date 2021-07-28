@@ -8,6 +8,7 @@ import os
 import logging
 from utils import degrees_to_radians
 import math
+import pickle
 
 
 def save_groundplanes(planes_fname, player, lidar_height):
@@ -152,7 +153,7 @@ def eulerAnglesToRotationMatrix(theta) :
 
     return R
 
-def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat):
+def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat, save_ie=True):
     """ Saves the calibration matrices to a file.
         AVOD (and KITTI) refers to P as P=K*[R;t], so we will just store P.
         The resulting file will contain:
@@ -177,9 +178,10 @@ def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat):
 
     R = extrinsic_mat[:3, :3]
     T = extrinsic_mat[:3, 3]
-    # T = np.array([T[0,0], -T[2,0], T[1,0]])
-    # T = np.array([0, -T[2,0], 0])
-    T = np.array([0, 0, 0])
+    T1 = T
+    # T1 = np.array([T[0,0], -T[2,0], T[1,0]])
+    # T1 = np.array([0, -T[2,0], 0])
+    # T1 = np.array([0, 0, 0])
 
     pitch, yaw, roll = rotationMatrixToEulerAngles(R)
     # R1 = np.array(eulerAnglesToRotationMatrix((-roll, 0, 0)))
@@ -187,7 +189,7 @@ def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat):
 
     R1 = np.array(eulerAnglesToRotationMatrix((0, 0, 0)))  # roll, pitch, yaw
     
-    RT1 = np.column_stack((R1, T))
+    RT1 = np.column_stack((R1, T1))
     RT1 = np.row_stack((RT1, np.array([0, 0, 0, 1])))
     print("RT1:", RT1)
     P0 = np.matmul(P0, RT1)
@@ -215,6 +217,12 @@ def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat):
         f.write("{}: {}\n".format(name, ' '.join(
             map(str, arr.flatten(ravel_mode).squeeze()))))
 
+    if save_ie:
+        with open(filename[:-3] + "i", 'wb') as f:
+            np.save(f, intrinsic_mat)
+        with open(filename[:-3] + "e", 'wb') as f:
+            np.save(f, extrinsic_mat)
+
     # All matrices are written on a line with spacing
     with open(filename, 'w') as f:
         for i in range(4):  # Avod expects all 4 P-matrices even though we only use the first
@@ -222,4 +230,4 @@ def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat):
         write_flat(f, "R0_rect", R0)
         write_flat(f, "Tr_velo_to_cam", TR_velodyne)
         write_flat(f, "TR_imu_to_velo", TR_imu_to_velo)
-    logging.info("Wrote all calibration matrices to %s", filename)
+    print("Wrote all calibration matrices to %s", filename)
