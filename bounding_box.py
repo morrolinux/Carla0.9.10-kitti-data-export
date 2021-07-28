@@ -95,6 +95,11 @@ def create_kitti_datapoint(agent, intrinsic_mat, extrinsic_mat, image, depth_map
     num_visible_vertices, num_vertices_outside_camera = calculate_occlusion_stats(
         image, vertices_pos2d, depth_map, draw_vertices=draw_3D_bbox)
 
+    # Since the midpoint/location of the pedestrian is in the middle of the agent, while for car it is at the bottom
+    # we need to subtract the bbox extent in the height direction when adding location of pedestrian.
+    if obj_type == 'Pedestrian':
+        location.z -= ext.z
+
     midpoint = midpoint_from_agent_location(image, location, extrinsic_mat, intrinsic_mat)
     # At least N vertices has to be visible in order to draw bbox
     if num_visible_vertices >= MIN_VISIBLE_VERTICES_FOR_RENDER and num_vertices_outside_camera < MIN_VISIBLE_VERTICES_FOR_RENDER:
