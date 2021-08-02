@@ -172,8 +172,8 @@ def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat, save_ie=Tr
     # KITTI format demands that we flatten in row-major order
     ravel_mode = 'C'
     P0 = intrinsic_mat
-    print("INTR:", intrinsic_mat)
-    print("EXTR:", extrinsic_mat)
+    # print("INTR:", intrinsic_mat)
+    # print("EXTR:", extrinsic_mat)
     P0 = np.column_stack((P0, np.array([0, 0, 0])))
 
     R = extrinsic_mat[:3, :3]
@@ -191,14 +191,13 @@ def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat, save_ie=Tr
     
     RT1 = np.column_stack((R1, T1))
     RT1 = np.row_stack((RT1, np.array([0, 0, 0, 1])))
-    print("RT1:", RT1)
+    # print("RT1:", RT1)
     P0 = np.matmul(P0, RT1)
 
     # P0 = np.matmul(P0, extrinsic_mat)
 
-    print("P0:", P0)
+    # print("P0:", P0)
     P0 = np.ravel(P0, order=ravel_mode)
-    print("P0:", P0)
 
     R0 = np.identity(3)
     TR_velodyne = np.array([[0, -1, 0],
