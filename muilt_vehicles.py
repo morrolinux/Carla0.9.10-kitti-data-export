@@ -548,7 +548,12 @@ def main():
                         images = [image]
                         with concurrent.futures.ThreadPoolExecutor() as executor:
                             futures = [executor.submit(sync_mode.generate_datapoints, img) for img in images]
-                        image, datapoints = futures[-1].result()
+                        
+                        try:
+                            image, datapoints = futures[-1].result()
+                        except Exception as e:
+                            print(e)
+                            continue
 
                         if datapoints and step % args.ds_interval is 0:
                             data = np.copy(np.frombuffer(sync_mode.point_cloud.raw_data, dtype=np.dtype('f4')))
