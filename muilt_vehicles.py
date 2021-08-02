@@ -54,7 +54,7 @@ LIDAR_PATH = os.path.join(OUTPUT_FOLDER, 'velodyne/{0:06}.bin')
 LABEL_PATH = os.path.join(OUTPUT_FOLDER, 'label_2/{0:06}.txt')
 IMAGE_PATH = os.path.join(OUTPUT_FOLDER, 'image_2/{0:06}.png')
 CALIBRATION_PATH = os.path.join(OUTPUT_FOLDER, 'calib/{0:06}.txt')
-
+STATS_FILE = os.path.join(OUTPUT_FOLDER, 'dslog.json')
 
 class SynchronyModel(object):
     def __init__(self):
@@ -516,11 +516,10 @@ def main():
         pygame.HWSURFACE | pygame.DOUBLEBUF)
     font = get_font()
     clock = pygame.time.Clock()
-    splitlog = open("splitlog.txt", "w")
 
     # load saved stats (dataset log)
     try:
-        with open("dslog.json") as dslog_file: 
+        with open(STATS_FILE) as dslog_file: 
             weathers = json.load(dslog_file)
     except Exception:
         weathers = []
@@ -530,7 +529,7 @@ def main():
             step = 0
             weather_idx = 1
             for weather, weather_dict in sync_mode.ds_counter.items():
-                splitlog.write("[{0:06d}] NEW WEATHER: {1}\n".format(sync_mode.captured_frame_no, weather))
+                print("[{0:06d}] NEW WEATHER: {1}\n".format(sync_mode.captured_frame_no, weather))
 
                 # resume where we left off or update the dataset stats adding a new entry
                 if len(weathers) > weather_idx:
@@ -565,7 +564,7 @@ def main():
                             }
                         })
 
-                    splitlog.write("[{0:06d}] NEW LOCATION: {1}\n".format(sync_mode.captured_frame_no, location))
+                    print("[{0:06d}] NEW LOCATION: {1}\n".format(sync_mode.captured_frame_no, location))
                     sync_mode.intrinsic, sync_mode.my_camera = sync_mode._span_spectator(location.location, location.rotation)
                     print("map name:", sync_mode.world.get_map().name)
 
@@ -627,7 +626,7 @@ def main():
                             (8, 28))
                         pygame.display.flip()
 
-                        with open("dslog.json", "w") as dslog_file: 
+                        with open(STATS_FILE, "w") as dslog_file: 
                             json.dump(weathers, dslog_file)
 
                     weathers[-1]["locations"][-1]["end_idx"] = sync_mode.captured_frame_no
