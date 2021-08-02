@@ -1,6 +1,7 @@
 import glob
 import os
 import sys
+import json
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -517,21 +518,59 @@ def main():
     clock = pygame.time.Clock()
     splitlog = open("splitlog.txt", "w")
 
+    # load saved stats (dataset log)
+    try:
+        with open("dslog.json") as dslog_file: 
+            weathers = json.load(dslog_file)
+    except Exception:
+        weathers = []
+
     with SynchronyModel() as sync_mode:
         try:
             step = 0
+            weather_idx = 1
             for weather, weather_dict in sync_mode.ds_counter.items():
-                splitlog.write("[{0:06d}] NEW WEATHER: {1}\n".format(step, weather))
+                splitlog.write("[{0:06d}] NEW WEATHER: {1}\n".format(sync_mode.captured_frame_no, weather))
+
+                # resume where we left off or update the dataset stats adding a new entry
+                if len(weathers) > weather_idx:
+                    print("skipping this weather as it was already done")
+                    continue
+                elif len(weathers) < weather_idx:
+                    weathers.append({
+                        "params": str(weather), 
+                        "start_idx" : int(sync_mode.captured_frame_no), 
+                        "end_idx" : -1, 
+                        "locations" : []
+                        })
 
                 sync_mode.set_weather(weather)
 
                 for loc_idx, location in enumerate(weather_dict.keys()):
-                    splitlog.write("[{0:06d}] NEW LOCATION: {1}\n".format(step, location))
+
+                    # resume where we left off or update the dataset stats adding a new entry
+                    if len(weathers[-1]["locations"]) > loc_idx+1:
+                        print("skipping this location as it was already done")
+                        continue
+                    elif len(weathers[-1]["locations"]) < loc_idx+1:
+                        weathers[-1]["locations"].append({
+                            "params" : str(location),
+                            "start_idx" : int(sync_mode.captured_frame_no),
+                            "end_idx" : -1,
+                            "cur_idx" : int(sync_mode.captured_frame_no),
+                            "ds_classes" : {
+                                "Pedestrian" : 0,
+                                "Car" : 0,
+                                "Cyclist": 0
+                            }
+                        })
+
+                    splitlog.write("[{0:06d}] NEW LOCATION: {1}\n".format(sync_mode.captured_frame_no, location))
                     sync_mode.intrinsic, sync_mode.my_camera = sync_mode._span_spectator(location.location, location.rotation)
                     print("map name:", sync_mode.world.get_map().name)
 
                     # Stop when we reach minimum criteria (2K samples for each class for each weather condition)
-                    while min(sync_mode.ds_counter[weather][location].values()) < 2000/len(sync_mode.locations):
+                    while min(weathers[-1]["locations"][-1]["ds_classes"].values()) < 2000/len(sync_mode.locations):
     
                         if should_quit(sync_mode):
                             break
@@ -572,8 +611,10 @@ def main():
 
                             # Increment dataset counters
                             for dp in datapoints:
-                                sync_mode.ds_counter[weather][location][dp.type] = sync_mode.ds_counter[weather][location][dp.type] + 1
-                            print(sync_mode.ds_counter[weather][location])
+                                weathers[-1]["locations"][-1]["ds_classes"][dp.type] += 1
+                            weathers[-1]["locations"][-1]["cur_idx"] = sync_mode.captured_frame_no
+
+                            print("\n", weathers, "\n")
 
                         step = step+1
                         fps = round(1.0 / snapshot.timestamp.delta_seconds)
@@ -585,6 +626,14 @@ def main():
                             font.render('% 5d FPS (simulated)' % fps, True, (255, 255, 255)),
                             (8, 28))
                         pygame.display.flip()
+
+                        with open("dslog.json", "w") as dslog_file: 
+                            json.dump(weathers, dslog_file)
+
+                    weathers[-1]["locations"][-1]["end_idx"] = sync_mode.captured_frame_no
+
+                weathers[-1]["end_idx"] = sync_mode.captured_frame_no
+                weather_idx += 1
 
         finally:
             print('destroying actors.')
