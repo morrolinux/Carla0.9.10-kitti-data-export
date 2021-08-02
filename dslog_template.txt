@@ -1,0 +1,18 @@
+weathers = [
+	      { "params" : "WeatherParameters(cloudiness=20, ... )",
+	        "start_idx" : 0,
+	        "end_idx" : 1500,
+	        "locations" : [
+	        		{ "params" : "Transform(Location(...))",
+	        		  "start_idx" : 0,
+	        		  "end_idx" : 100,
+				  "cur_idx" : sync_mode.captured_frame_no,
+	        		  "ds_classes" : {
+	        		  	"Pedestrian" : 10,
+	        		  	"Car" : 20,
+	        		  	"Cyclist" : 15,
+	        		  }
+				}
+	        	]
+               }
+	   ]
