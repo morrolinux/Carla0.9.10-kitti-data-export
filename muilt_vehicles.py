@@ -569,7 +569,8 @@ def main():
                     print("map name:", sync_mode.world.get_map().name)
 
                     # Stop when we reach minimum criteria (2K samples for each class for each weather condition)
-                    while min(weathers[-1]["locations"][-1]["ds_classes"].values()) < 2000/len(sync_mode.locations):
+                    stop_collecting_threshold = 2000/len(sync_mode.locations)
+                    while min(weathers[-1]["locations"][-1]["ds_classes"].values()) < stop_collecting_threshold:
     
                         if should_quit(sync_mode):
                             break
@@ -594,6 +595,18 @@ def main():
                             continue
 
                         if datapoints and step % args.ds_interval is 0:
+                            # Keep the dataset classes balanced: avoid collecting data if no minority is present 
+                            frame_dp = {"Pedestrian": 0, "Cyclist": 0, "Car": 0}
+                            ds_imp = 0
+                            for dp in datapoints:
+                                frame_dp[dp.type] +=1
+                            for k, v in frame_dp.items():
+                                if weathers[-1]["locations"][-1]["ds_classes"][k] < stop_collecting_threshold and v > 0:
+                                    ds_imp +=1 
+                            if ds_imp == 0:
+                                print("SKIPPING FRAME as it contains 0 useful classes as of now")
+                                continue
+
                             data = np.copy(np.frombuffer(sync_mode.point_cloud.raw_data, dtype=np.dtype('f4')))
                             data = np.reshape(data, (int(data.shape[0] / 4), 4))
                             # Isolate the 3D data
