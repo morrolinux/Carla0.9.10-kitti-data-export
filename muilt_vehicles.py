@@ -85,7 +85,6 @@ class SynchronyModel(object):
             # carla.Transform(carla.Location(x=-55.640671, y=3.514651, z=5.624344), carla.Rotation(pitch=0, yaw=-169.737045, roll=0.000025)), # debug
             carla.Transform(carla.Location(x=173.431839, y=53.041073, z=4.272343), carla.Rotation(pitch=-38.675350, yaw=132.347687, roll=0.000067)),
             carla.Transform(carla.Location(x=160.032928, y=71.224144, z=5.341573), carla.Rotation(pitch=-41.482201, yaw=-140.674652, roll=0.000042)),
-            carla.Transform(carla.Location(x=160.032928, y=71.224144, z=5.341573), carla.Rotation(pitch=-41.482201, yaw=-140.674652, roll=0.000042)),
             carla.Transform(carla.Location(x=247.920151, y=73.704063, z=6.082335), carla.Rotation(pitch=-22.306694, yaw=-131.522003, roll=0.000102)), 
             carla.Transform(carla.Location(x=-57.657494, y=3.750844, z=5.813370), carla.Rotation(pitch=-26.488121, yaw=-20.079067, roll=0.000140)),
             carla.Transform(carla.Location(x=-67.881264, y=9.866474, z=6.102913), carla.Rotation(pitch=-21.914791, yaw=-103.430275, roll=0.000133)),
@@ -547,11 +546,13 @@ def main():
 
                 for loc_idx, location in enumerate(weather_dict.keys()):
 
-                    # resume where we left off or update the dataset stats adding a new entry
-                    if len(weathers[-1]["locations"]) > loc_idx+1:
+                    # Resume where we left off or update the dataset stats adding a new entry
+                    if len(weathers[-1]["locations"]) > loc_idx+1 \
+                        or (len(weathers[-1]["locations"]) == loc_idx+1 and weathers[-1]["locations"][-1]["end_idx"]) > 0:
                         print("skipping this location as it was already done")
                         continue
                     elif len(weathers[-1]["locations"]) < loc_idx+1:
+                        print("Adding new entry for location", loc_idx+1)
                         weathers[-1]["locations"].append({
                             "params" : str(location),
                             "start_idx" : int(sync_mode.captured_frame_no),
