@@ -155,7 +155,7 @@ class SynchronyModel(object):
                                     fog_density=0.000000, fog_distance=0.000000, fog_falloff=0.000000),
             ]
 
-        weather_conditions = [carla.WeatherParameters.WetSunset]
+        # weather_conditions = [carla.WeatherParameters.WetSunset]
 
         return weather_conditions
 
@@ -528,6 +528,9 @@ def main():
             step = -1
             weather_idx = 1
             for weather, weather_dict in sync_mode.ds_counter.items():
+
+                print("\nDS_COUNTER:", sync_mode.ds_counter, "\n")
+
                 print("len(weathers) , weather_idx", len(weathers), weather_idx)
 
                 # resume where we left off or update the dataset stats adding a new entry
