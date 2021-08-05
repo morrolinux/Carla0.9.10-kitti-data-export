@@ -529,8 +529,6 @@ def main():
             weather_idx = 1
             for weather, weather_dict in sync_mode.ds_counter.items():
 
-                print("\nDS_COUNTER:", sync_mode.ds_counter, "\n")
-
                 print("len(weathers) , weather_idx", len(weathers), weather_idx)
 
                 # resume where we left off or update the dataset stats adding a new entry
