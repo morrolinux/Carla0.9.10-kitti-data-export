@@ -160,10 +160,10 @@ class SynchronyModel(object):
         return weather_conditions
 
     def set_weather(self, w):
-        print(self.world.get_weather())
+        # print(self.world.get_weather())
         weather = carla.WeatherParameters(sun_altitude_angle=70.0)
         self.world.set_weather(w)
-        print(self.world.get_weather())
+        # print(self.world.get_weather())
 
     def __enter__(self):
         # set the sensor listener function
@@ -525,16 +525,17 @@ def main():
 
     with SynchronyModel() as sync_mode:
         try:
-            step = 0
+            step = -1
             weather_idx = 1
             for weather, weather_dict in sync_mode.ds_counter.items():
-                print("[{0:06d}] NEW WEATHER: {1}\n".format(sync_mode.captured_frame_no, weather))
+                print("len(weathers) , weather_idx", len(weathers), weather_idx)
 
                 # resume where we left off or update the dataset stats adding a new entry
                 if len(weathers) > weather_idx:
                     print("skipping this weather as it was already done")
                     continue
                 elif len(weathers) < weather_idx:
+                    print("[{0:06d}] NEW WEATHER: {1}\n".format(sync_mode.captured_frame_no, weather))
                     weathers.append({
                         "params": str(weather), 
                         "start_idx" : int(sync_mode.captured_frame_no), 
@@ -542,6 +543,7 @@ def main():
                         "locations" : []
                         })
 
+                print("[{0:06d}] WEATHER: {1}\n".format(sync_mode.captured_frame_no, weather))
                 sync_mode.set_weather(weather)
 
                 for loc_idx, location in enumerate(weather_dict.keys()):
@@ -552,7 +554,7 @@ def main():
                         print("skipping this location as it was already done")
                         continue
                     elif len(weathers[-1]["locations"]) < loc_idx+1:
-                        print("Adding new entry for location", loc_idx+1)
+                        print("Adding NEW entry for location", loc_idx+1)
                         weathers[-1]["locations"].append({
                             "params" : str(location),
                             "start_idx" : int(sync_mode.captured_frame_no),
@@ -565,7 +567,7 @@ def main():
                             }
                         })
 
-                    print("[{0:06d}] NEW LOCATION: {1}\n".format(sync_mode.captured_frame_no, location))
+                    print("[{0:06d}] LOCATION: {1}\n".format(sync_mode.captured_frame_no, location))
                     sync_mode.intrinsic, sync_mode.my_camera = sync_mode._span_spectator(location.location, location.rotation)
                     print("map name:", sync_mode.world.get_map().name)
 
@@ -573,11 +575,12 @@ def main():
                     stop_collecting_threshold = 2000/len(sync_mode.locations)
                     while min(weathers[-1]["locations"][-1]["ds_classes"].values()) < stop_collecting_threshold:
     
+                        step = step+1
                         if should_quit(sync_mode):
                             break
 
-                        if step % 60 is 0:
-                            print(sync_mode.player.get_transform())
+                        # if step % 60 is 0:
+                        #     print(sync_mode.player.get_transform())
 
                         clock.tick()
                         snapshot, sync_mode.main_image, sync_mode.depth_image, sync_mode.point_cloud = sync_mode.tick(timeout=2.0)
@@ -589,13 +592,24 @@ def main():
                         with concurrent.futures.ThreadPoolExecutor() as executor:
                             futures = [executor.submit(sync_mode.generate_datapoints, img) for img in images]
                         
-                        try:
-                            image, datapoints = futures[-1].result()
-                        except Exception as e:
-                            print(e)
-                            continue
+                        # try:
+                        image, datapoints = futures[-1].result()
+                        # except Exception as e:
+                        #     print(e)
+                        #     continue
 
-                        if datapoints and step % args.ds_interval is 0:
+                        fps = round(1.0 / snapshot.timestamp.delta_seconds)
+                        draw_image(display, image)
+                        display.blit(
+                            font.render('% 5d FPS (real)' % clock.get_fps(), True, (255, 255, 255)),
+                            (8, 10))
+                        display.blit(
+                            font.render('% 5d FPS (simulated)' % fps, True, (255, 255, 255)),
+                            (8, 28))
+                        pygame.display.flip()
+
+
+                        if datapoints and (step % args.ds_interval is 0):
                             # Keep the dataset classes balanced: avoid collecting data if no minority is present 
                             frame_dp = {"Pedestrian": 0, "Cyclist": 0, "Car": 0}
                             ds_imp = 0
@@ -629,22 +643,13 @@ def main():
 
                             print("\n", weathers, "\n")
 
-                        step = step+1
-                        fps = round(1.0 / snapshot.timestamp.delta_seconds)
-                        draw_image(display, image)
-                        display.blit(
-                            font.render('% 5d FPS (real)' % clock.get_fps(), True, (255, 255, 255)),
-                            (8, 10))
-                        display.blit(
-                            font.render('% 5d FPS (simulated)' % fps, True, (255, 255, 255)),
-                            (8, 28))
-                        pygame.display.flip()
-
                         with open(STATS_FILE, "w") as dslog_file: 
                             json.dump(weathers, dslog_file)
 
+                    print("done collecting data for this location...")
                     weathers[-1]["locations"][-1]["end_idx"] = sync_mode.captured_frame_no
 
+                print("preparing for next weather...")
                 weathers[-1]["end_idx"] = sync_mode.captured_frame_no
                 weather_idx += 1
 
