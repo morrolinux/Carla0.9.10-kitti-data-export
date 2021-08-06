@@ -526,8 +526,9 @@ def main():
     with SynchronyModel() as sync_mode:
         try:
             step = -1
-            weather_idx = 1
+            weather_idx = 0
             for weather, weather_dict in sync_mode.ds_counter.items():
+                weather_idx += 1
 
                 # resume where we left off or update the dataset stats adding a new entry
                 if len(weathers) > weather_idx:
@@ -650,7 +651,6 @@ def main():
 
                 print("preparing for next weather...")
                 weathers[-1]["end_idx"] = sync_mode.captured_frame_no
-                weather_idx += 1
 
         finally:
             print('destroying actors.')
