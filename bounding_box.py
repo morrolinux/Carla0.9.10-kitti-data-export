@@ -107,7 +107,7 @@ def create_kitti_datapoint(agent, intrinsic_mat, extrinsic_mat, image, depth_map
 
     midpoint = midpoint_from_agent_location(image, location, extrinsic_mat, intrinsic_mat)
     # At least N vertices has to be visible in order to draw bbox
-    if num_visible_vertices >= MIN_VISIBLE_VERTICES_FOR_RENDER: # and num_vertices_outside_camera < MIN_VISIBLE_VERTICES_FOR_RENDER:
+    if num_visible_vertices >= MIN_VISIBLE_VERTICES_FOR_RENDER:  # and num_vertices_outside_camera < MIN_VISIBLE_VERTICES_FOR_RENDER:
         bbox_2d = calc_projected_2d_bbox(vertices_pos2d)
         area = calc_bbox2d_area(bbox_2d)
         if area < MIN_BBOX_AREA_IN_PX:

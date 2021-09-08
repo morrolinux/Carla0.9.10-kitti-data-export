@@ -2,6 +2,7 @@ import glob
 import os
 import sys
 import json
+from types import CodeType
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -29,7 +30,7 @@ from dataexport import *
 parser = argparse.ArgumentParser()
 parser.add_argument("--overwrite", action="store_true", default=False, help="ow dataset. append otherwise")
 parser.add_argument("--camera-fov", default="120", type=str, help="Camera FOV")
-parser.add_argument("--ds-interval", default=60, type=int, help="Interval between frames to be exported")
+parser.add_argument("--ds-interval", default=20, type=int, help="Interval between frames to be exported")
 args = parser.parse_args()
 
 
@@ -232,7 +233,7 @@ class SynchronyModel(object):
         init_setting = world.get_settings()
         settings = world.get_settings()
         settings.synchronous_mode = True
-        settings.fixed_delta_seconds = 0.05  # 20 steps  per second
+        settings.fixed_delta_seconds = 1  # 1 step per second (fast)
         world.apply_settings(settings)
         return world, init_setting, client, traffic_manager
 
@@ -266,12 +267,12 @@ class SynchronyModel(object):
         camera_d_bp.set_attribute('image_size_y', str(WINDOW_HEIGHT))
         camera_d_bp.set_attribute('fov', args.camera_fov) # 45 60 90 120 150 180
 
-        lidar_bp.set_attribute('range', '200')
+        lidar_bp.set_attribute('range', '100')
         lidar_bp.set_attribute('rotation_frequency', '20')
         lidar_bp.set_attribute('upper_fov', '2')
         lidar_bp.set_attribute('lower_fov', '-26.8')
-        lidar_bp.set_attribute('points_per_second', '320000')
-        lidar_bp.set_attribute('channels', '32')
+        lidar_bp.set_attribute('points_per_second', '32')
+        lidar_bp.set_attribute('channels', '2')
 
         transform_sensor = carla.Transform(carla.Location(x=0, y=0, z=0))   # we move the player (observer actor) instead. 
 
@@ -583,7 +584,7 @@ def main():
                         #     print(sync_mode.player.get_transform())
 
                         clock.tick()
-                        snapshot, sync_mode.main_image, sync_mode.depth_image, sync_mode.point_cloud = sync_mode.tick(timeout=2.0)
+                        snapshot, sync_mode.main_image, sync_mode.depth_image, sync_mode.point_cloud = sync_mode.tick(timeout=1)
 
                         image = image_converter.to_rgb_array(sync_mode.main_image)
                         sync_mode.extrinsic = np.mat(sync_mode.my_camera.get_transform().get_matrix())
