@@ -573,7 +573,7 @@ def main():
                     print("map name:", sync_mode.world.get_map().name)
 
                     # Stop when we reach minimum criteria (2K samples for each class for each weather condition)
-                    stop_collecting_threshold = 2000/len(sync_mode.locations)
+                    stop_collecting_threshold = 1000/len(sync_mode.locations)
                     while min(weathers[-1]["locations"][-1]["ds_classes"].values()) < stop_collecting_threshold:
     
                         step = step+1
@@ -633,8 +633,8 @@ def main():
                             # points = points[:, :-1]
                             # points[:, 2] -= LIDAR_HEIGHT_POS
 
-                            # save training files asynchronously
-                            threading.Thread(target=sync_mode._save_training_files, args=(datapoints, points,)).start()
+                            # save training files
+                            sync_mode._save_training_files(datapoints, points)
                             sync_mode.captured_frame_no += 1
 
                             # Increment dataset counters

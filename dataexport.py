@@ -9,6 +9,7 @@ import logging
 from utils import degrees_to_radians
 import math
 import pickle
+from math import degrees
 
 
 def save_groundplanes(planes_fname, player, lidar_height):
@@ -172,34 +173,25 @@ def save_calibration_matrices(filename, intrinsic_mat, extrinsic_mat, save_ie=Tr
     # KITTI format demands that we flatten in row-major order
     ravel_mode = 'C'
     P0 = intrinsic_mat
-    # print("INTR:", intrinsic_mat)
-    # print("EXTR:", extrinsic_mat)
     P0 = np.column_stack((P0, np.array([0, 0, 0])))
 
     R = extrinsic_mat[:3, :3]
     T = extrinsic_mat[:3, 3]
     T1 = T
-    # T1 = np.array([T[0,0], -T[2,0], T[1,0]])
-    # T1 = np.array([0, -T[2,0], 0])
-    # T1 = np.array([0, 0, 0])
 
     pitch, yaw, roll = rotationMatrixToEulerAngles(R)
-    # R1 = np.array(eulerAnglesToRotationMatrix((-roll, 0, 0)))
-    # R1 = np.array(eulerAnglesToRotationMatrix((-pitch, 0, 0)))  # roll, pitch, yaw
 
-    R1 = np.array(eulerAnglesToRotationMatrix((0, 0, 0)))  # roll, pitch, yaw
-    
+    # transform the 3d bbox from object coordiante to camera_0 coordinate
+    R0 = eulerAnglesToRotationMatrix((0, 0, 0))
+    R1 = np.array(eulerAnglesToRotationMatrix((-pitch, 0, roll)))  # roll (carla pitch), pitch (carla yaw), img_yaw (carla roll)
+    R0 = np.dot(R1.T, R0)
+
     RT1 = np.column_stack((R1, T1))
     RT1 = np.row_stack((RT1, np.array([0, 0, 0, 1])))
     # print("RT1:", RT1)
-    P0 = np.matmul(P0, RT1)
 
-    # P0 = np.matmul(P0, extrinsic_mat)
-
-    # print("P0:", P0)
     P0 = np.ravel(P0, order=ravel_mode)
 
-    R0 = np.identity(3)
     TR_velodyne = np.array([[0, -1, 0],
                             [0, 0, -1],
                             [1, 0, 0]])
