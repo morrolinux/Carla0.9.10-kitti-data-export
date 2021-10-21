@@ -115,9 +115,10 @@ def create_kitti_datapoint(agent, intrinsic_mat, extrinsic_mat, image, depth_map
             return image, None
         if draw_3D_bbox:
             draw_3d_bounding_box(image, vertices_pos2d)
-        from math import pi
+
         # xiu gai
-        rotation_y = get_relative_rotation_y(agent, player) % pi # 取余数
+        rotation_y = get_relative_rotation_y(agent, player)
+        rotation_y = np.arctan2(np.sin(rotation_y), np.cos(rotation_y)) # make sure values are between -pi and pi (the correct way)
 
         datapoint = KittiDescriptor()
         datapoint.set_bbox(bbox_2d)
@@ -135,7 +136,7 @@ def get_relative_rotation_y(agent, player):
     The relative rotation is the difference between the camera rotation (on car) and the agent rotation"""
     # We only car about the rotation for the classes we do detection on
     if agent.get_transform():
-        rot_agent = agent.get_transform().rotation.yaw
+        rot_agent = agent.get_transform().rotation.yaw - 90 # we also swapped agent's width and length in datadescriptor.py
         rot_car = player.get_transform().rotation.yaw
         return degrees_to_radians(rot_agent - rot_car)
 
