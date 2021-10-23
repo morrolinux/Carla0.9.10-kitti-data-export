@@ -30,7 +30,7 @@ from dataexport import *
 parser = argparse.ArgumentParser()
 parser.add_argument("--overwrite", action="store_true", default=False, help="ow dataset. append otherwise")
 parser.add_argument("--camera-fov", default="120", type=str, help="Camera FOV")
-parser.add_argument("--ds-interval", default=20, type=int, help="Interval between frames to be exported")
+parser.add_argument("--ds-interval", default=60, type=int, help="Interval between frames to be exported")
 args = parser.parse_args()
 
 
@@ -233,7 +233,9 @@ class SynchronyModel(object):
         init_setting = world.get_settings()
         settings = world.get_settings()
         settings.synchronous_mode = True
-        settings.fixed_delta_seconds = 1  # 1 step per second (fast)
+        settings.fixed_delta_seconds = 0.26  # 1 step per second (fast)
+        settings.max_substep_delta_time = 0.01666
+        settings.max_substeps = 16
         world.apply_settings(settings)
         return world, init_setting, client, traffic_manager
 
